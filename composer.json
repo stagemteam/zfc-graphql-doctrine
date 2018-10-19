@@ -22,13 +22,13 @@
   },
   "autoload": {
     "psr-4": {
-      "Stagem\\ZfcGraphGL\\": "src/"
+      "Stagem\\ZfcGraphQL\\": "src/"
     }
   },
   "extra": {
     "zf": {
-      "component": "Stagem\\ZfcGraphGL",
-      "config-provider": "Stagem\\ZfcGraphGL\\ConfigProvider"
+      "component": "Stagem\\ZfcGraphQL",
+      "config-provider": "Stagem\\ZfcGraphQL\\ConfigProvider"
     }
   }
 }
