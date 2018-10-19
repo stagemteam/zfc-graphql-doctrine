@@ -22,7 +22,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Stagem\\ZfcAction\\": "src/"
+      "Stagem\\ZfcGraphGL\\": "src/"
     }
   },
   "extra": {
