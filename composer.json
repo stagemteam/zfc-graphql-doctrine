@@ -17,8 +17,7 @@
     }
   ],
   "require": {
-    "php": ">=7.0",
-    "ecodev/graphql-doctrine": "^5.0"
+    "php": ">=7.0"
   },
   "autoload": {
     "psr-4": {
