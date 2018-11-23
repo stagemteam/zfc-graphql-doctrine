@@ -16,6 +16,7 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use Popov\ZfcUser\Model\User;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -144,16 +145,31 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                             return $result;
                         },
                     ],
+
+                    'user' => [
+                        'type' => $types->getOutput(User::class), // Use automated ObjectType for output
+                        'description' => 'Returns user by id',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) use ($types) {
+                            $queryBuilder = $types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
                 }
             ]);
 
-            /*$mutationType = new ObjectType([
+            $mutationType = new ObjectType([
                 'name' => 'mutation',
                 'fields' => [
-                    'createPost' => [
+                    'createMarketplace' => [
                         'type' => Type::nonNull($types->getOutput(Marketplace::class)),
                         'args' => [
                             'input' => Type::nonNull($types->getInput(Marketplace::class)), // Use automated InputObjectType for input
@@ -162,7 +178,7 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                             // create new post and flush...
                         },
                     ],
-                    'updatePost' => [
+                    /*'updatePost' => [
                         'type' => Type::nonNull($types->getOutput(Marketplace::class)),
                         'args' => [
                             'id' => Type::nonNull(Type::id()), // Use standard API when needed
@@ -171,15 +187,25 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                         'resolve' => function ($root, $args): void {
                             // update existing post and flush...
                         },
-                    ],
+                    ],*/
+                    /*'login' => [
+                        'type' => Type::nonNull($types->getOutput(Marketplace::class)),
+                        'args' => [
+                            'id' => Type::nonNull(Type::id()), // Use standard API when needed
+                            'input' => $types->getPartialInput(Post::class),  // Use automated InputObjectType for partial input for updates
+                        ],
+                        'resolve' => function ($root, $args): void {
+                            // update existing post and flush...
+                        },
+                    ],*/
                 ],
-            ]);*/
+            ]);
 
             // See docs on schema options:
             // http://webonyx.github.io/graphql-php/type-system/schema/#configuration-options
             $schema = new Schema([
                 'query' => $queryType,
-                //'mutation' => $mutationType,
+                'mutation' => $mutationType,
             ]);
 
             $schema->assertValid();
