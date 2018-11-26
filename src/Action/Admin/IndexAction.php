@@ -16,6 +16,9 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use Popov\ZfcRole\Model\Role;
+use Popov\ZfcUser\Helper\UserHelper;
+use Popov\ZfcUser\Model\User;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -35,38 +38,57 @@ use Zend\ServiceManager\ServiceManager;
 
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
+
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
+use GraphQL\Server\ServerConfig;
 use GraphQL\Server\StandardServer;
 use GraphQL\Doctrine\DefaultFieldResolver;
 use GraphQL\Doctrine\Types;
 use Stagem\Amazon\Model\Marketplace;
 
-class IndexAction implements MiddlewareInterface, RequestMethodInterface
+use GraphQL\Examples\Blog\AppContext;
+
+use Stagem\ZfcAction\Page\AbstractAction;
+use Zend\Stdlib\Exception\InvalidArgumentException;
+
+//class IndexAction implements MiddlewareInterface, RequestMethodInterface
+class IndexAction extends AbstractAction
 {
     /**
-     * @var ServiceManager
+     * @var Types
      */
-    protected $container;
+    protected $types;
 
     /**
      * @var EntityManager
      */
     protected $entityManager;
 
-    public function __construct(ContainerInterface $container, EntityManager $entityManager)
+    //public function __construct(ContainerInterface $container, EntityManager $entityManager)
+    //public function __construct(\Stagem\ZfcGraphQL\Service\Plugin\GraphPluginManager $container, EntityManager $entityManager)
+    public function __construct(Types $types, EntityManager $entityManager)
     {
-        $this->container = $container;
+        $this->types = $types;
+        //$this->container = $container;
         $this->entityManager = $entityManager;
+
+        //$entityManager->getConfiguration()
 
         /** @var \Doctrine\ORM\Configuration $doctrineConfig */
         // @todo remove when will be fixed @see https://github.com/Ecodev/graphql-doctrine/issues/21#issuecomment-432064584
-        $doctrineConfig = $this->container->get('doctrine.configuration.orm_default');
+        //$doctrineConfig = $this->container->get('doctrine.configuration.orm_default');
+        $doctrineConfig = $entityManager->getConfiguration();
         $doctrineConfig->getMetadataDriverImpl()
             ->setDefaultDriver(new \Doctrine\ORM\Mapping\Driver\AnnotationDriver(
                 new \Doctrine\Common\Annotations\AnnotationReader()
             ));
+    }
+
+    public function action(ServerRequestInterface $request)
+    {
+        // TODO: Implement action() method.
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -76,10 +98,16 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
         #$this->container->setAllowOverride(false);
 
         // Configure the type registry
-        $types = new Types($this->entityManager, $this->container);
+        //$types = new Types($this->entityManager, $this->container);
+        //$types = $this->types;
+
+        //$date = $types->get(\DateTime::class);
 
         // Configure default field resolver to be able to use getters
         GraphQL::setDefaultFieldResolver(new DefaultFieldResolver());
+
+        //$rankTrackingType = $this->container->get(RankTrackingType::class);
+        //$rankTrackingType = $types->get(RankTrackingType::class);
 
         try {
             $queryType = new ObjectType([
@@ -87,18 +115,19 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                 'fields' => [
 
                     'rankTracking' => [
-                        'type' => Type::listOf($this->container->get(RankTrackingType::class)),
+                        'type' => Type::listOf($this->types->get(RankTrackingType::class)),
                         'description' => 'Returns user by id (in range of 1-5)',
                         'args' => [
                             'productIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
                             //'productIds' => Type::nonNull(Type::id()),
                             //'lastDays' => Type::nonNull(Type::int()),
-                            'startedAt' => $this->container->get(\Stagem\Product\GraphQL\Type\DateTimeType::class),
-                            'endedAt' => $this->container->get(\Stagem\Product\GraphQL\Type\DateTimeType::class),
-                        ],
-                        'resolve' => function ($root, $args) use ($types) {
+                            //'startedAt' => $this->container->get(\Stagem\ZfcGraphQL\Type\DateTimeType::class),
+                            //'endedAt' => $this->container->get(\Stagem\ZfcGraphQL\Type\DateTimeType::class),
 
-                            /** @var HistoryChartService $historyChartService */
+                            'startedAt' => $this->types->get(\DateTime::class),
+                            'endedAt' => $this->types->get(\DateTime::class),
+                        ],
+                        'resolve' => function ($root, $args) {
                             $historyChartService = $this->container->get(HistoryChartService::class);
 
                             $product = $this->entityManager->find(Product::class, $args['productIds'][0]);
@@ -111,13 +140,13 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                     ],
 
                     'marketplace' => [
-                        'type' => $types->getOutput(Marketplace::class), // Use automated ObjectType for output
+                        'type' => $this->types->getOutput(Marketplace::class), // Use automated ObjectType for output
                         'description' => 'Returns marketplace by id (in range of 1-6)',
                         'args' => [
                             'id' => Type::nonNull(Type::id())
                         ],
-                        'resolve' => function ($root, $args) use ($types) {
-                            $queryBuilder = $types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $queryBuilder->getQuery()->getArrayResult();
 
@@ -125,19 +154,48 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                         },
                     ],
                     'marketplaces' => [
-                        'type' => Type::listOf($types->getOutput(Marketplace::class)), // Use automated ObjectType for output
+                        'type' => Type::listOf($this->types->getOutput(Marketplace::class)), // Use automated ObjectType for output
                         'args' => [
                             [
                                 'name' => 'filter',
-                                'type' => $types->getFilter(Marketplace::class), // Use automated filtering options
+                                'type' => $this->types->getFilter(Marketplace::class), // Use automated filtering options
                             ],
                             [
                                 'name' => 'sorting',
-                                'type' => $types->getSorting(Marketplace::class), // Use automated sorting options
+                                'type' => $this->types->getSorting(Marketplace::class), // Use automated sorting options
                             ],
                         ],
-                        'resolve' => function ($root, $args) use ($types) {
-                            $queryBuilder = $types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'role' => [
+                        'type' => $this->types->getOutput(Role::class), // Use automated ObjectType for output
+                        'description' => 'Returns user by id',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Role::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+                    'user' => [
+                        'type' => $this->types->getOutput(User::class), // Use automated ObjectType for output
+                        'description' => 'Returns user by id',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(User::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $queryBuilder->getQuery()->getArrayResult();
 
@@ -150,45 +208,72 @@ class IndexAction implements MiddlewareInterface, RequestMethodInterface
                 }
             ]);
 
-            /*$mutationType = new ObjectType([
+            $mutationType = new ObjectType([
                 'name' => 'mutation',
                 'fields' => [
-                    'createPost' => [
-                        'type' => Type::nonNull($types->getOutput(Marketplace::class)),
+                    'createMarketplace' => [
+                        'type' => Type::nonNull($this->types->getOutput(Marketplace::class)),
                         'args' => [
-                            'input' => Type::nonNull($types->getInput(Marketplace::class)), // Use automated InputObjectType for input
+                            'input' => Type::nonNull($this->types->getInput(Marketplace::class)), // Use automated InputObjectType for input
                         ],
                         'resolve' => function ($root, $args): void {
                             // create new post and flush...
                         },
                     ],
-                    'updatePost' => [
-                        'type' => Type::nonNull($types->getOutput(Marketplace::class)),
+                    'login' => [
+                        //'type' => Type::nonNull($this->types->getOutput(User::class)),
+                        'type' => new \GraphQL\Type\Definition\ObjectType([
+                            'name' => 'Token',
+                            'fields' => [
+                                'token' => Type::nonNull(Type::string())
+                            ]
+                        ]),
                         'args' => [
-                            'id' => Type::nonNull(Type::id()), // Use standard API when needed
-                            'input' => $types->getPartialInput(Post::class),  // Use automated InputObjectType for partial input for updates
+                            'email' => Type::nonNull(Type::string()), // Use standard API when needed
+                            'password' => Type::nonNull(Type::string()), // Use standard API when needed
+                            //'input' => $this->types->getPartialInput(Post::class),  // Use automated InputObjectType for partial input for updates
                         ],
-                        'resolve' => function ($root, $args): void {
-                            // update existing post and flush...
+                        'resolve' => function ($root, $args) {
+                            if ($user = $this->user()->current()) {
+                                return ['token' => session_id()];
+                            }
+                            throw new InvalidArgumentException(
+                                'GraphQLMiddleware cannot find user with credential passed to LoginMutation'
+                            );
                         },
                     ],
                 ],
-            ]);*/
+            ]);
 
             // See docs on schema options:
             // http://webonyx.github.io/graphql-php/type-system/schema/#configuration-options
             $schema = new Schema([
                 'query' => $queryType,
-                //'mutation' => $mutationType,
+                'mutation' => $mutationType,
             ]);
 
             $schema->assertValid();
 
             // See docs on server options:
             // http://webonyx.github.io/graphql-php/executing-queries/#server-configuration-options
-            $server = new StandardServer([
-                'schema' => $schema
-            ]);
+            #$server = new StandardServer([
+            #    'schema' => $schema
+            #]);
+
+            $context = new \stdClass();
+            $context->request = $request;
+            $context->user = $this->user()->current();
+            $context->pool = $this->pool()->current();
+            $context->entityManager = $this->entityManager;
+
+            $config = ServerConfig::create()
+                ->setSchema($schema)
+                ->setContext($context)
+                //->setErrorFormatter($myFormatter)
+                //->setDebug($debug)
+            ;
+
+            $server = new StandardServer($config);
 
             $server->handleRequest();
         } catch (\Exception $e) {
