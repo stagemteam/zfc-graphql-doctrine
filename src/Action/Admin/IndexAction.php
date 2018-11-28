@@ -30,9 +30,11 @@ use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 
 use Fig\Http\Message\RequestMethodInterface;
+use Stagem\Customer\Model\Customer;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
+use Stagem\Review\Model\Review;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\ServiceManager\ServiceManager;
 
@@ -139,6 +141,42 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    'review' => [
+                        'type' => $this->types->getOutput(Review::class), // Use automated ObjectType for output
+                        'description' => 'Returns Review by id',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'reviews' => [
+                        'type' => Type::listOf($this->types->getOutput(Review::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Review::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Review::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
                     'marketplace' => [
                         'type' => $this->types->getOutput(Marketplace::class), // Use automated ObjectType for output
                         'description' => 'Returns marketplace by id (in range of 1-6)',
@@ -193,6 +231,26 @@ class IndexAction extends AbstractAction
                         'description' => 'Returns user by id',
                         'args' => [
                             'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(User::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+                    'users' => [
+                        'type' => Type::listOf($this->types->getOutput(User::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(User::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(User::class), // Use automated sorting options
+                            ],
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(User::class, $args['filter'] ?? [], $args['sorting'] ?? []);
