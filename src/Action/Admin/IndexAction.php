@@ -198,7 +198,6 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-
                     'customer' => [
                         'type' => $this->types->getOutput(Customer::class), // Use automated ObjectType for output
                         'description' => 'Returns customer by id (in range of 1-6)',
@@ -245,8 +244,6 @@ class IndexAction extends AbstractAction
                             #return $item->asArray();
                         },
                     ],
-
-
 
                     'marketplace' => [
                         'type' => $this->types->getOutput(Marketplace::class), // Use automated ObjectType for output
@@ -332,8 +329,6 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
-
-
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
