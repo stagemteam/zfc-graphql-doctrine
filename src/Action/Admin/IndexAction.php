@@ -124,10 +124,6 @@ class IndexAction extends AbstractAction
                         'description' => 'Returns user by id (in range of 1-5)',
                         'args' => [
                             'productIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
-                            //'productIds' => Type::nonNull(Type::id()),
-                            //'lastDays' => Type::nonNull(Type::int()),
-                            //'startedAt' => $this->container->get(\Stagem\ZfcGraphQL\Type\DateTimeType::class),
-                            //'endedAt' => $this->container->get(\Stagem\ZfcGraphQL\Type\DateTimeType::class),
 
                             'startedAt' => $this->types->get(\DateTime::class),
                             'endedAt' => $this->types->get(\DateTime::class),
@@ -214,7 +210,7 @@ class IndexAction extends AbstractAction
                     ],
 
 
-                    'customer' => [
+                    'shipment' => [
                         'type' => $this->types->getOutput(Shipment::class), // Use automated ObjectType for output
                         'description' => 'Returns shipment by id (in range of 1-6)',
                         'args' => [

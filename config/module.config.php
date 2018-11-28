@@ -4,6 +4,7 @@ namespace Stagem\ZfcGraphQL;
 
 use DateTime;
 use GraphQL;
+use Stagem\GraphQL\Type;
 use Popov\ZfcPermission\Acl\Acl;
 use Zend\ServiceManager\Factory\InvokableFactory;
 
@@ -32,12 +33,19 @@ return [
 
     'graph_plugins' => [
         'aliases' => [
+            'json' => Type\JsonType::class,
+            'array' => Type\IterableType::class,
+            'iterable' => Type\IterableType::class,
+            'email' => Type\EmailType::class,
             'datetime' => Type\DateTimeType::class,
             DateTime::class => Type\DateTimeType::class
         ],
         //'invokables' => [],
         'factories' => [
-            Type\DateTimeType::class => InvokableFactory::class
+            Type\JsonType::class => InvokableFactory::class,
+            Type\IterableType::class => InvokableFactory::class,
+            Type\EmailType::class => InvokableFactory::class,
+            Type\DateTimeType::class => InvokableFactory::class,
         ],
     ],
 
