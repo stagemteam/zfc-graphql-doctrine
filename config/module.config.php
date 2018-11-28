@@ -32,6 +32,7 @@ return [
 
     'graph_plugins' => [
         'aliases' => [
+            'datetime' => Type\DateTimeType::class,
             DateTime::class => Type\DateTimeType::class
         ],
         //'invokables' => [],

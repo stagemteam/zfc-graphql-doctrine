@@ -30,9 +30,14 @@ use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 
 use Fig\Http\Message\RequestMethodInterface;
+use Stagem\Customer\Model\Customer;
+use Stagem\Order\Model\MarketOrder;
+use Stagem\Product\GraphQL\Type\MarketOrderType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
+use Stagem\Review\Model\Review;
+use Stagem\Shipment\Model\Shipment;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\ServiceManager\ServiceManager;
 
@@ -139,6 +144,110 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    /*'order' => [
+                        'type' => Type::listOf($this->types->get(MarketOrderType::class)),
+                        'description' => 'Returns orders',
+                        'args' => [
+                            //'orderIds' => Type::nonNull(Type::id()),
+                            'orderIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
+                            'startedAt' => $this->types->get(\DateTime::class),
+                            'endedAt' => $this->types->get(\DateTime::class),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $historyChartService = $this->container->get(HistoryChartService::class);
+
+                            $orders = $this->entityManager->find(MarketOrder::class, $args['orderIds'][0]);
+                            $marketplace = $this->entityManager->find(Marketplace::class, 1);
+
+                            $result = $historyChartService->prepareChartData($orders, $marketplace, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
+
+                            return $result;
+                        },
+                    ],*/
+
+
+                    'product' => [
+                        'type' => $this->types->getOutput(Product::class), // Use automated ObjectType for output
+                        'description' => 'Returns product by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+
+
+                    'review' => [
+                        'type' => $this->types->getOutput(Review::class), // Use automated ObjectType for output
+                        'description' => 'Returns review by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+
+                    'customer' => [
+                        'type' => $this->types->getOutput(Customer::class), // Use automated ObjectType for output
+                        'description' => 'Returns customer by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Customer::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+
+                    'customer' => [
+                        'type' => $this->types->getOutput(Shipment::class), // Use automated ObjectType for output
+                        'description' => 'Returns shipment by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Shipment::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'order' => [
+                        'type' => $this->types->getOutput(MarketOrder::class), // Use automated ObjectType for output
+                        'description' => 'Returns order by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+                            return $result;
+
+                            #$item = $this->entityManager->find(MarketOrder::class, $args['id']);
+                            #return $item->asArray();
+                        },
+                    ],
+
+
+
                     'marketplace' => [
                         'type' => $this->types->getOutput(Marketplace::class), // Use automated ObjectType for output
                         'description' => 'Returns marketplace by id (in range of 1-6)',
@@ -202,6 +311,29 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
+                    'orders' => [
+                        'type' => Type::listOf($this->types->getOutput(MarketOrder::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(MarketOrder::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(MarketOrder::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
