@@ -181,16 +181,16 @@ class IndexAction extends AbstractAction
 
                     'review' => [
                         'type' => $this->types->getOutput(Review::class), // Use automated ObjectType for output
-                        'description' => 'Returns review by id (in range of 1-6)',
+                        'description' => 'Returns review by id',
                         'args' => [
                             'id' => Type::nonNull(Type::id())
+                            //'id' =>  $this->types->getId(Review::class)
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            $item = $this->entityManager->find(Review::class, $args['id']);
 
-                            $result = $queryBuilder->getQuery()->getArrayResult();
+                            return $item;
 
-                            return $result;
                         },
                     ],
 
