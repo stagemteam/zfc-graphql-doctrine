@@ -31,11 +31,12 @@ use Interop\Http\Server\RequestHandlerInterface;
 
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
+use Stagem\GraphQL\Type\DateType;
 use Stagem\Order\Model\MarketOrder;
-use Stagem\Product\GraphQL\Type\MarketOrderType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
+use Stagem\Product\Service\HistoryService;
 use Stagem\Review\Model\Review;
 use Stagem\Shipment\Model\Shipment;
 use Zend\Diactoros\Response\EmptyResponse;
@@ -73,10 +74,10 @@ class IndexAction extends AbstractAction
 
     //public function __construct(ContainerInterface $container, EntityManager $entityManager)
     //public function __construct(\Stagem\ZfcGraphQL\Service\Plugin\GraphPluginManager $container, EntityManager $entityManager)
-    public function __construct(Types $types, EntityManager $entityManager)
+    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container)
     {
         $this->types = $types;
-        //$this->container = $container;
+        $this->container = $container;
         $this->entityManager = $entityManager;
 
         //$entityManager->getConfiguration()
@@ -121,7 +122,7 @@ class IndexAction extends AbstractAction
 
                     'rankTracking' => [
                         'type' => Type::listOf($this->types->get(RankTrackingType::class)),
-                        'description' => 'Returns user by id (in range of 1-5)',
+                        'description' => 'Returns Rank Tracking in certain period',
                         'args' => [
                             'productIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
 
@@ -137,6 +138,26 @@ class IndexAction extends AbstractAction
                             $result = $historyChartService->prepareChartData($product, $marketplace, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
 
                             return $result;
+                        },
+                    ],
+
+                    'topRated' => [
+                        'type' => Type::listOf($this->types->getOutput(\Stagem\Product\Model\History::class)),
+                        'description' => 'Returns Top Rated products in certain period',
+                        'args' => [
+                            'profileRank' => Type::nonNull(Type::int()),
+                            'updatedAt' => $this->types->get(DateType::class),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $historyService = $this->container->get(HistoryService::class);
+                            $histories = $historyService->getLatestSummaryHistories();
+
+                            $histories->setParameter('profileRank', $args['profileRank']);
+                            $histories->setParameter('updatedAt', $args['updatedAt']->format('Y-m-d H:i:s'));
+                            $histories->setParameter('updatedAtTo', $args['updatedAt']->modify('+1 day')->format('Y-m-d H:i:s'));
+                            $items = $histories->getResult();
+
+                            return $items;
                         },
                     ],
 
