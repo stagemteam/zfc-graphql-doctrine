@@ -248,11 +248,9 @@ class IndexAction extends AbstractAction
                             'id' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            $item = $this->entityManager->find(Marketplace::class, $args['id']);
 
-                            $result = $queryBuilder->getQuery()->getArrayResult();
-
-                            return $result;
+                            return $item;
                         },
                     ],
                     'marketplaces' => [
