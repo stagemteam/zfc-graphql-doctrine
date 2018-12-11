@@ -150,12 +150,13 @@ class IndexAction extends AbstractAction
                         ],
                         'resolve' => function ($root, $args) {
                             $historyService = $this->container->get(HistoryService::class);
-                            $histories = $historyService->getLatestSummaryHistories();
 
-                            $histories->setParameter('profileRank', $args['profileRank']);
-                            $histories->setParameter('updatedAt', $args['updatedAt']->format('Y-m-d H:i:s'));
-                            $histories->setParameter('updatedAtTo', $args['updatedAt']->modify('+1 day')->format('Y-m-d H:i:s'));
-                            $items = $histories->getResult();
+                            $qb = $historyService->getLatestSummaryHistories();
+
+                            $qb->setParameter('profileRank', $args['profileRank']);
+                            $qb->setParameter('updatedAt', $args['updatedAt']->format('Y-m-d H:i:s'));
+                            $qb->setParameter('updatedAtTo', (clone $args['updatedAt'])->setTime(23, 59, 59)->format('Y-m-d H:i:s'));
+                            $items = $qb->getResult();
 
                             return $items;
                         },
