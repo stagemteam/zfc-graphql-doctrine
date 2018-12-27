@@ -37,6 +37,7 @@ return [
             'array' => Type\IterableType::class,
             'iterable' => Type\IterableType::class,
             'email' => Type\EmailType::class,
+            'date' => Type\DateType::class,
             'datetime' => Type\DateTimeType::class,
             DateTime::class => Type\DateTimeType::class
         ],
@@ -45,6 +46,7 @@ return [
             Type\JsonType::class => InvokableFactory::class,
             Type\IterableType::class => InvokableFactory::class,
             Type\EmailType::class => InvokableFactory::class,
+            Type\DateType::class => InvokableFactory::class,
             Type\DateTimeType::class => InvokableFactory::class,
         ],
     ],
