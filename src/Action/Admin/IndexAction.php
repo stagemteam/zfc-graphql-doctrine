@@ -16,6 +16,8 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use Popov\ZfcEntity\Model\Entity;
+use Popov\ZfcEntity\Model\Module;
 use Popov\ZfcRole\Model\Role;
 use Popov\ZfcUser\Helper\UserHelper;
 use Popov\ZfcUser\Model\User;
@@ -38,6 +40,9 @@ use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Review\Model\Review;
 use Stagem\Shipment\Model\Shipment;
+use Stagem\ZfcConfigurator\Model\ConfiguratorAlgorithm;
+use Stagem\ZfcConfigurator\Model\ConfiguratorItem;
+use Stagem\ZfcConfigurator\Model\ConfiguratorJob;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\ServiceManager\ServiceManager;
 
@@ -177,6 +182,26 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    'products' => [
+                        'type' => Type::listOf($this->types->getOutput(Product::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Product::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Product::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
 
 
                     'review' => [
@@ -191,6 +216,27 @@ class IndexAction extends AbstractAction
 
                             return $item;
 
+                        },
+                    ],
+
+                    'reviews' => [
+                        'type' => Type::listOf($this->types->getOutput(Review::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Review::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Review::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
                         },
                     ],
 
@@ -323,6 +369,138 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
+                    'entity' => [
+                        'type' => $this->types->getOutput(Entity::class), // Use automated ObjectType for output
+                        'description' => 'Returns product by id (in range of 1-6)',
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Entity::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'entities' => [
+                        'type' => Type::listOf($this->types->getOutput(Entity::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Entity::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Entity::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Entity::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+
+                            return $result;
+                        },
+                    ],
+
+                    'module' => [
+                        'type' => $this->types->getOutput(Module::class), // Use automated ObjectType for output
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $result = $this->entityManager->find(Module::class, $args['id']);
+
+                            return $result;
+                        },
+                    ],
+                    'modules' => [
+                        'type' => Type::listOf($this->types->getOutput(Module::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Module::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Module::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Module::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'configuratorJobs' => [
+                        'type' => Type::listOf($this->types->getOutput(ConfiguratorJob::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(ConfiguratorJob::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(ConfiguratorJob::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorJob::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'configuratorAlgorithms' => [
+                        'type' => Type::listOf($this->types->getOutput(ConfiguratorAlgorithm::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(ConfiguratorAlgorithm::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(ConfiguratorAlgorithm::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorAlgorithm::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'configuratorItems' => [
+                        'type' => Type::listOf($this->types->getOutput(ConfiguratorItem::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(ConfiguratorItem::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(ConfiguratorItem::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorItem::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        },
+                    ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
@@ -361,6 +539,52 @@ class IndexAction extends AbstractAction
                             throw new InvalidArgumentException(
                                 'GraphQLMiddleware cannot find user with credential passed to LoginMutation'
                             );
+                        },
+                    ],
+                    'addConfiguratorItem' => [
+                        'type' => Type::nonNull($this->types->getOutput(ConfiguratorItem::class)),
+                        'args' => [
+                            'itemId' => Type::nonNull(Type::int()),
+                            'entity' => Type::nonNull(Type::id()),
+                            'configuratorJob' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
+                            $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['configuratorJob']]);
+
+                            $configuratorItem = new ConfiguratorItem();
+                            $configuratorItem->setItemId($args['itemId']);
+                            $configuratorItem->setEntity($entity);
+                            $configuratorItem->setConfiguratorJob($configuratorJob);
+                            $this->entityManager->persist($configuratorItem);
+                            $this->entityManager->flush(/*$configuratorItem*/);
+
+                            return $configuratorItem;
+                        },
+                    ],
+                    'deleteConfiguratorItem' => [
+                        //'type' => Type::nonNull($this->types->getOutput(ConfiguratorItem::class)),
+                        'type' => Type::nonNull(Type::string()),
+                        'args' => [
+                            'itemId' => Type::nonNull(Type::int()),
+                            'entity' => Type::nonNull(Type::id()),
+                            'configuratorJob' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $configuratorItem = $this->entityManager->getRepository(ConfiguratorItem::class)
+                                ->findOneBy(
+                                    [
+                                        'itemId' => $args['itemId'],
+                                        'entity' => $args['entity'],
+                                        'configuratorJob' => $args['configuratorJob']
+                                    ]);
+
+                            $itemId = $configuratorItem->getId();
+
+                            $this->entityManager->remove($configuratorItem);
+                            $this->entityManager->flush(/*$configuratorItem*/);
+
+                            return 'Item with itemId: ' . $itemId . ' successfully deleted.';
                         },
                     ],
                 ],
