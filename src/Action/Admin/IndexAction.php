@@ -17,7 +17,6 @@ namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
 use Popov\ZfcEntity\Model\Entity;
-use Popov\ZfcEntity\Model\Module;
 use Popov\ZfcRole\Model\Role;
 use Popov\ZfcUser\Helper\UserHelper;
 use Popov\ZfcUser\Model\User;
@@ -33,16 +32,18 @@ use Interop\Http\Server\RequestHandlerInterface;
 
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
+use Stagem\GraphQL\Type\DateType;
 use Stagem\Order\Model\MarketOrder;
-use Stagem\Product\GraphQL\Type\MarketOrderType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
+use Stagem\Product\Service\HistoryService;
 use Stagem\Review\Model\Review;
 use Stagem\Shipment\Model\Shipment;
 use Stagem\ZfcConfigurator\Model\ConfiguratorAlgorithm;
 use Stagem\ZfcConfigurator\Model\ConfiguratorItem;
 use Stagem\ZfcConfigurator\Model\ConfiguratorJob;
+use Popov\ZfcEntity\Model\Module;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\ServiceManager\ServiceManager;
 
@@ -78,10 +79,10 @@ class IndexAction extends AbstractAction
 
     //public function __construct(ContainerInterface $container, EntityManager $entityManager)
     //public function __construct(\Stagem\ZfcGraphQL\Service\Plugin\GraphPluginManager $container, EntityManager $entityManager)
-    public function __construct(Types $types, EntityManager $entityManager)
+    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container)
     {
         $this->types = $types;
-        //$this->container = $container;
+        $this->container = $container;
         $this->entityManager = $entityManager;
 
         //$entityManager->getConfiguration()
@@ -126,7 +127,7 @@ class IndexAction extends AbstractAction
 
                     'rankTracking' => [
                         'type' => Type::listOf($this->types->get(RankTrackingType::class)),
-                        'description' => 'Returns user by id (in range of 1-5)',
+                        'description' => 'Returns Rank Tracking in certain period',
                         'args' => [
                             'productIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
 
@@ -145,27 +146,26 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    /*'order' => [
-                        'type' => Type::listOf($this->types->get(MarketOrderType::class)),
-                        'description' => 'Returns orders',
+                    'topRated' => [
+                        'type' => Type::listOf($this->types->getOutput(\Stagem\Product\Model\History::class)),
+                        'description' => 'Returns Top Rated products in certain period',
                         'args' => [
-                            //'orderIds' => Type::nonNull(Type::id()),
-                            'orderIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
-                            'startedAt' => $this->types->get(\DateTime::class),
-                            'endedAt' => $this->types->get(\DateTime::class),
+                            'profileRank' => Type::nonNull(Type::int()),
+                            'updatedAt' => $this->types->get(DateType::class),
                         ],
                         'resolve' => function ($root, $args) {
-                            $historyChartService = $this->container->get(HistoryChartService::class);
+                            $historyService = $this->container->get(HistoryService::class);
 
-                            $orders = $this->entityManager->find(MarketOrder::class, $args['orderIds'][0]);
-                            $marketplace = $this->entityManager->find(Marketplace::class, 1);
+                            $qb = $historyService->getLatestSummaryHistories();
 
-                            $result = $historyChartService->prepareChartData($orders, $marketplace, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
+                            $qb->setParameter('profileRank', $args['profileRank']);
+                            $qb->setParameter('updatedAt', $args['updatedAt']->format('Y-m-d H:i:s'));
+                            $qb->setParameter('updatedAtTo', (clone $args['updatedAt'])->setTime(23, 59, 59)->format('Y-m-d H:i:s'));
+                            $items = $qb->getResult();
 
-                            return $result;
+                            return $items;
                         },
-                    ],*/
-
+                    ],
 
                     'product' => [
                         'type' => $this->types->getOutput(Product::class), // Use automated ObjectType for output
@@ -182,28 +182,6 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'products' => [
-                        'type' => Type::listOf($this->types->getOutput(Product::class)), // Use automated ObjectType for output
-                        'args' => [
-                            [
-                                'name' => 'filter',
-                                'type' => $this->types->getFilter(Product::class), // Use automated filtering options
-                            ],
-                            [
-                                'name' => 'sorting',
-                                'type' => $this->types->getSorting(Product::class), // Use automated sorting options
-                            ],
-                        ],
-                        'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
-
-                            $result = $queryBuilder->getQuery()->getArrayResult();
-
-                            return $result;
-                        },
-                    ],
-
-
                     'review' => [
                         'type' => $this->types->getOutput(Review::class), // Use automated ObjectType for output
                         'description' => 'Returns review by id',
@@ -216,27 +194,6 @@ class IndexAction extends AbstractAction
 
                             return $item;
 
-                        },
-                    ],
-
-                    'reviews' => [
-                        'type' => Type::listOf($this->types->getOutput(Review::class)), // Use automated ObjectType for output
-                        'args' => [
-                            [
-                                'name' => 'filter',
-                                'type' => $this->types->getFilter(Review::class), // Use automated filtering options
-                            ],
-                            [
-                                'name' => 'sorting',
-                                'type' => $this->types->getSorting(Review::class), // Use automated sorting options
-                            ],
-                        ],
-                        'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
-
-                            $result = $queryBuilder->getQuery()->getArrayResult();
-
-                            return $result;
                         },
                     ],
 
@@ -255,7 +212,6 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-
                     'shipment' => [
                         'type' => $this->types->getOutput(Shipment::class), // Use automated ObjectType for output
                         'description' => 'Returns shipment by id (in range of 1-6)',
@@ -273,15 +229,18 @@ class IndexAction extends AbstractAction
 
                     'order' => [
                         'type' => $this->types->getOutput(MarketOrder::class), // Use automated ObjectType for output
-                        'description' => 'Returns order by id (in range of 1-6)',
+                        'description' => 'Returns order by id',
                         'args' => [
                             'id' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
-                            $result = $queryBuilder->getQuery()->getArrayResult();
-                            return $result;
+//                            $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+//                            $result = $queryBuilder->getQuery()->getArrayResult();
+//                            return $result;
 
+                            $item = $this->entityManager->find(MarketOrder::class, $args['id']);
+
+                            return $item;
                             #$item = $this->entityManager->find(MarketOrder::class, $args['id']);
                             #return $item->asArray();
                         },
@@ -294,11 +253,14 @@ class IndexAction extends AbstractAction
                             'id' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $item = $this->entityManager->find(Marketplace::class, $args['id']);
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
-                            return $item;
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
                         },
                     ],
+
                     'marketplaces' => [
                         'type' => Type::listOf($this->types->getOutput(Marketplace::class)), // Use automated ObjectType for output
                         'args' => [
@@ -334,6 +296,7 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
                     'user' => [
                         'type' => $this->types->getOutput(User::class), // Use automated ObjectType for output
                         'description' => 'Returns user by id',
@@ -360,6 +323,8 @@ class IndexAction extends AbstractAction
                                 'name' => 'sorting',
                                 'type' => $this->types->getSorting(MarketOrder::class), // Use automated sorting options
                             ],
+                            'startedAt' => $this->types->get(\DateTime::class),
+                            'endedAt' => $this->types->get(\DateTime::class),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -541,6 +506,7 @@ class IndexAction extends AbstractAction
                             );
                         },
                     ],
+
                     'addConfiguratorItem' => [
                         'type' => Type::nonNull($this->types->getOutput(ConfiguratorItem::class)),
                         'args' => [
