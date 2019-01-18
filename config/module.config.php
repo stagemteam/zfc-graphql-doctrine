@@ -38,6 +38,7 @@ return [
             'iterable' => Type\IterableType::class,
             'email' => Type\EmailType::class,
             'date' => Type\DateType::class,
+            'time' => Type\TimeType::class,
             'datetime' => Type\DateTimeType::class,
             DateTime::class => Type\DateTimeType::class
         ],

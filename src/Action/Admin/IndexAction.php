@@ -16,6 +16,7 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use function Functional\push;
 use Popov\ZfcEntity\Model\Entity;
 use Popov\ZfcRole\Model\Role;
 use Popov\ZfcUser\Helper\UserHelper;
@@ -33,6 +34,7 @@ use Interop\Http\Server\RequestHandlerInterface;
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
+use Stagem\GraphQL\Type\TimeType;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
@@ -44,6 +46,8 @@ use Stagem\ZfcConfigurator\Model\ConfiguratorAlgorithm;
 use Stagem\ZfcConfigurator\Model\ConfiguratorItem;
 use Stagem\ZfcConfigurator\Model\ConfiguratorJob;
 use Popov\ZfcEntity\Model\Module;
+use Stagem\ZfcConfigurator\Service\ConfiguratorAlgorithmService;
+use Stagem\ZfcConfigurator\Service\ConfiguratorJobService;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\ServiceManager\ServiceManager;
 
@@ -77,13 +81,19 @@ class IndexAction extends AbstractAction
      */
     protected $entityManager;
 
+    /**
+     * @var ServiceManager
+     */
+    protected $serviceManager;
+
     //public function __construct(ContainerInterface $container, EntityManager $entityManager)
     //public function __construct(\Stagem\ZfcGraphQL\Service\Plugin\GraphPluginManager $container, EntityManager $entityManager)
-    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container)
+    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container, ServiceManager $serviceManager)
     {
         $this->types = $types;
         $this->container = $container;
         $this->entityManager = $entityManager;
+        $this->serviceManager = $serviceManager;
 
         //$entityManager->getConfiguration()
 
@@ -507,10 +517,33 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'addConfiguratorItem' => [
-                        'type' => Type::nonNull($this->types->getOutput(ConfiguratorItem::class)),
+                    'runJob' => [
+                        'type' => Type::string(),
                         'args' => [
-                            'itemId' => Type::nonNull(Type::int()),
+                            'jobId' => Type::nonNull(Type::string()), // Use standard API when needed
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $job = $this->serviceManager->get(ConfiguratorJobService::class)
+                                ->getConfiguratorJobWithId($args['jobId'])
+                                ->getQuery()
+                                ->getSingleResult();
+
+                            $algorithm = $this->serviceManager->get(ConfiguratorAlgorithmService::class)
+                                ->getConfiguratorAlgorithmWithId($job->getAlgorithm()->getId())
+                                ->getQuery()
+                                ->getSingleResult();
+
+                            $method = explode('::', $algorithm->getCallback());
+                            $entity = $this->serviceManager->get($method[0]);
+
+                            call_user_func_array([$entity, $method[1]], [$job]);
+                        },
+                    ],
+
+                    'addConfiguratorItem' => [
+                        'type' => Type::listOf(Type::nonNull($this->types->getOutput(ConfiguratorItem::class))),
+                        'args' => [
+                            'itemId' => Type::listOf(Type::nonNull(Type::int())),
                             'entity' => Type::nonNull(Type::id()),
                             'configuratorJob' => Type::nonNull(Type::id())
                         ],
@@ -518,40 +551,93 @@ class IndexAction extends AbstractAction
                             $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
                             $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['configuratorJob']]);
 
-                            $configuratorItem = new ConfiguratorItem();
-                            $configuratorItem->setItemId($args['itemId']);
-                            $configuratorItem->setEntity($entity);
-                            $configuratorItem->setConfiguratorJob($configuratorJob);
-                            $this->entityManager->persist($configuratorItem);
-                            $this->entityManager->flush(/*$configuratorItem*/);
+                            $itemsIds = $args['itemId'];
+                            $configuratorItems = [];
 
-                            return $configuratorItem;
+                            if (!empty($itemsIds)) {
+                                foreach ($itemsIds as $itemsId) {
+                                    $configuratorItem = new ConfiguratorItem();
+                                    $configuratorItem->setItemId($itemsId);
+                                    $configuratorItem->setEntity($entity);
+                                    $configuratorItem->setConfiguratorJob($configuratorJob);
+                                    $this->entityManager->persist($configuratorItem);
+                                    array_push($configuratorItems, $configuratorItem);
+                                }
+                                $this->entityManager->flush();
+
+                                return $configuratorItems;
+                            }
+
+                            return new \Exception('Nothing was added.');
                         },
                     ],
                     'deleteConfiguratorItem' => [
-                        //'type' => Type::nonNull($this->types->getOutput(ConfiguratorItem::class)),
-                        'type' => Type::nonNull(Type::string()),
+                        'type' => Type::listOf(Type::nonNull($this->types->getOutput(ConfiguratorItem::class))),
                         'args' => [
-                            'itemId' => Type::nonNull(Type::int()),
+                            'itemId' => Type::listOf(Type::nonNull(Type::int())),
                             'entity' => Type::nonNull(Type::id()),
                             'configuratorJob' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $configuratorItem = $this->entityManager->getRepository(ConfiguratorItem::class)
-                                ->findOneBy(
-                                    [
-                                        'itemId' => $args['itemId'],
-                                        'entity' => $args['entity'],
-                                        'configuratorJob' => $args['configuratorJob']
-                                    ]);
+                            $itemsIds = $args['itemId'];
+                            $configuratorItems = [];
 
-                            $itemId = $configuratorItem->getId();
+                            if (!empty($itemsIds)) {
+                                foreach ($itemsIds as $itemsId) {
+                                    $configuratorItem = $this->entityManager->getRepository(ConfiguratorItem::class)
+                                        ->findOneBy(
+                                            [
+                                                'itemId' => $itemsId,
+                                                'entity' => $args['entity'],
+                                                'configuratorJob' => $args['configuratorJob']
+                                            ]);
+                                    array_push($configuratorItems, $configuratorItem);
+                                    $this->entityManager->remove($configuratorItem);
+                                }
+                                $this->entityManager->flush();
 
-                            $this->entityManager->remove($configuratorItem);
-                            $this->entityManager->flush(/*$configuratorItem*/);
+                                return $configuratorItems;
+                            }
 
-                            return 'Item with itemId: ' . $itemId . ' successfully deleted.';
+                            return new \Exception('Nothing was deleted.');
                         },
+                    ],
+
+                    'addConfiguratorJob' => [
+                        'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
+                        'args' => [
+                            'name' => Type::nonNull(Type::string()),
+                            'isActive' => Type::nonNull(Type::int()),
+                            'when' => Type::nonNull(Type::string()),
+                            'day' => Type::int(),
+                            'time' => Type::nonNull(Type::string()),
+                            'options' => Type::nonNull(Type::string()),
+                            'entity' => Type::nonNull(Type::id()),
+                            'pool' => Type::nonNull(Type::id()),
+                            'configuratorAlgorithm' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function($root, $args) {
+                            $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
+                            $pool = $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['pool']]);
+                            $configuratorAlgorithm = $this->entityManager->getRepository(ConfiguratorAlgorithm::class)->findOneBy(['id' => $args['configuratorAlgorithm']]);
+
+                            $configuratorJob = new ConfiguratorJob();
+                            $configuratorJob->setName($args['name']);
+                            $configuratorJob->setIsActive($args['isActive']);
+                            $configuratorJob->setWhenTime($args['when']);
+                            if ($args['when'] != 'everyday') {
+                                $configuratorJob->setDayOfWhen($args['day']);
+                            }
+                            $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['time']));
+                            $configuratorJob->setOptions($args['options']);
+                            $configuratorJob->setEntity($entity);
+                            $configuratorJob->setPool($pool);
+                            $configuratorJob->setAlgorithm($configuratorAlgorithm);
+                            $this->entityManager->persist($configuratorJob);
+                            $this->entityManager->flush();
+
+                            return $configuratorJob;
+                        }
                     ],
                 ],
             ]);
