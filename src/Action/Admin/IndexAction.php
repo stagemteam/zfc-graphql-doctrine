@@ -639,6 +639,50 @@ class IndexAction extends AbstractAction
                             return $configuratorJob;
                         }
                     ],
+
+                    'updateConfiguratorJob' => [
+                        'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
+                        'args' => [
+                            'id' => Type::id(),
+                            'name' => Type::string(),
+                            'isActive' => Type::int(),
+                            'whenTime' => Type::string(),
+                            'dayOfWhen' => Type::int(),
+                            'timeToRun' => Type::string(),
+                            'options' => Type::string(),
+                            'pool' => Type::id(),
+                        ],
+                        'resolve' => function($root, $args) {
+                            $pool = $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['pool']]);
+
+                            $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['id']]);
+                            if ($configuratorJob) {
+                                foreach ($args as $key => $value) {
+                                    if (isset($value) && $key != 'id') {
+                                        if ($key == 'dayOfWhen' && $args['whenTime'] == 'everyday') {
+                                            $configuratorJob->setDayOfWhen(null);
+                                            continue;
+                                        }
+                                        if ($key == 'pool') {
+                                            $configuratorJob->setPool($pool);
+                                            continue;
+                                        }
+                                        if ($key == 'timeToRun') {
+                                            $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['timeToRun']));
+                                            continue;
+                                        }
+                                        $configuratorJob->{'set' . ucfirst($key)}($value);
+                                    }
+                                }
+                                $this->entityManager->merge($configuratorJob);
+                                $this->entityManager->flush();
+
+                                return $configuratorJob;
+                            } else {
+                                return new \Exception('Configurator job not found');
+                            }
+                        }
+                    ],
                 ],
             ]);
 
