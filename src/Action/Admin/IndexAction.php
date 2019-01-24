@@ -536,7 +536,7 @@ class IndexAction extends AbstractAction
                             $method = explode('::', $algorithm->getCallback());
                             $entity = $this->serviceManager->get($method[0]);
 
-                            call_user_func_array([$entity, $method[1]], [$job]);
+                            return call_user_func_array([$entity, $method[1]], [$job]);
                         },
                     ],
 
@@ -646,8 +646,8 @@ class IndexAction extends AbstractAction
                             'id' => Type::id(),
                             'name' => Type::string(),
                             'isActive' => Type::int(),
-                            'whenTime' => Type::string(),
                             'dayOfWhen' => Type::int(),
+                            'whenTime' => Type::string(),
                             'timeToRun' => Type::string(),
                             'options' => Type::string(),
                             'pool' => Type::id(),
@@ -659,7 +659,7 @@ class IndexAction extends AbstractAction
                             if ($configuratorJob) {
                                 foreach ($args as $key => $value) {
                                     if (isset($value) && $key != 'id') {
-                                        if ($key == 'dayOfWhen' && $args['whenTime'] == 'everyday') {
+                                        if ($key == 'whenTime' && $value == 'everyday') {
                                             $configuratorJob->setDayOfWhen(null);
                                             continue;
                                         }
