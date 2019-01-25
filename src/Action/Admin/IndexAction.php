@@ -659,10 +659,6 @@ class IndexAction extends AbstractAction
                             if ($configuratorJob) {
                                 foreach ($args as $key => $value) {
                                     if (isset($value) && $key != 'id') {
-                                        if ($key == 'dayOfWhen' && $args['whenTime'] == 'everyday') {
-                                            $configuratorJob->setDayOfWhen(null);
-                                            continue;
-                                        }
                                         if ($key == 'pool') {
                                             $configuratorJob->setPool($pool);
                                             continue;
@@ -674,6 +670,11 @@ class IndexAction extends AbstractAction
                                         $configuratorJob->{'set' . ucfirst($key)}($value);
                                     }
                                 }
+
+                                if ($args['whenTime'] == 'everyday') {
+                                    $configuratorJob->setDayOfWhen(null);
+                                }
+
                                 $this->entityManager->merge($configuratorJob);
                                 $this->entityManager->flush();
 
