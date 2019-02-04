@@ -49,6 +49,8 @@ use Popov\ZfcEntity\Model\Module;
 use Stagem\ZfcConfigurator\Service\ConfiguratorAlgorithmService;
 use Stagem\ZfcConfigurator\Service\ConfiguratorJobService;
 use Zend\Diactoros\Response\EmptyResponse;
+use Zend\Diactoros\Response\JsonResponse;
+use Zend\Diactoros\Response\TextResponse;
 use Zend\ServiceManager\ServiceManager;
 
 use GraphQL\GraphQL;
@@ -720,11 +722,18 @@ class IndexAction extends AbstractAction
 
             $server = new StandardServer($config);
 
+            #ob_start();
             $server->handleRequest();
+            #$result = ob_get_contents();
+            #ob_end_clean();
+
+            #return new JsonResponse();
+
+
         } catch (\Exception $e) {
             StandardServer::send500Error($e);
         }
 
-        return new EmptyResponse();
+        return new EmptyResponse(200);
     }
 }

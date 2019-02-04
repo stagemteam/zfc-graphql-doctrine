@@ -38,6 +38,9 @@ class GraphQLMiddleware implements MiddlewareInterface
 
     protected $loginForm;
 
+    /**
+     * @var Auth
+     */
     protected $auth;
 
     public function __construct(

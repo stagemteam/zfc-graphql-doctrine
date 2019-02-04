@@ -63,8 +63,10 @@ class Module
         // Set session ID before SessionManager initialization.
         // To do the same in GraphQLMiddleware is to late.
         $request = $e->getRequest();
-        if ($request instanceof HttpRequest && ($header = $request->getHeaders()->get('authorization'))) {
-            $sessionId = trim(str_replace('Bearer', '', $header->getFieldValue()));
+        if ($request instanceof HttpRequest
+            && ($header = $request->getHeaders()->get('authorization'))
+            && ($sessionId = trim(str_replace('Bearer', '', $header->getFieldValue())))
+        ) {
             $sessionManager = Session::getDefaultManager();
             // Start session with new session ID
             $sessionManager->setId($sessionId);
