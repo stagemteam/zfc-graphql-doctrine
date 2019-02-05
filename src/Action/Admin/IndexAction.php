@@ -610,6 +610,7 @@ class IndexAction extends AbstractAction
                         'args' => [
                             'name' => Type::nonNull(Type::string()),
                             'isActive' => Type::nonNull(Type::int()),
+                            'isBad' => Type::nonNull(Type::int()),
                             'when' => Type::nonNull(Type::string()),
                             'day' => Type::int(),
                             'time' => Type::nonNull(Type::string()),
@@ -626,6 +627,7 @@ class IndexAction extends AbstractAction
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
                             $configuratorJob->setIsActive($args['isActive']);
+                            $configuratorJob->setIsActive($args['isBad']);
                             $configuratorJob->setWhenTime($args['when']);
                             if ($args['when'] != 'everyday') {
                                 $configuratorJob->setDayOfWhen($args['day']);
@@ -648,6 +650,7 @@ class IndexAction extends AbstractAction
                             'id' => Type::id(),
                             'name' => Type::string(),
                             'isActive' => Type::int(),
+                            'isBad' => Type::int(),
                             'whenTime' => Type::string(),
                             'dayOfWhen' => Type::int(),
                             'timeToRun' => Type::string(),
