@@ -70,6 +70,12 @@ class Module
             $sessionManager = Session::getDefaultManager();
             // Start session with new session ID
             $sessionManager->setId($sessionId);
+        } elseif ($request instanceof HttpRequest
+            && ($sessionId = $request->getQuery(session_name()))
+        ) {
+            $sessionManager = Session::getDefaultManager();
+            // Start session with new session ID
+            $sessionManager->setId($sessionId);
         }
     }
 }
