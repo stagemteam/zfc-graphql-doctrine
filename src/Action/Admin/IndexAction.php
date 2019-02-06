@@ -627,13 +627,13 @@ class IndexAction extends AbstractAction
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
                             $configuratorJob->setIsActive($args['isActive']);
-                            $configuratorJob->setIsActive($args['isBad']);
+                            $configuratorJob->setIsBad($args['isBad']);
                             $configuratorJob->setWhenTime($args['when']);
                             if ($args['when'] != 'everyday') {
                                 $configuratorJob->setDayOfWhen($args['day']);
                             }
                             $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['time']));
-                            $configuratorJob->setOptions($args['options']);
+                            $configuratorJob->setOptions(json_decode($args['options'], true));
                             $configuratorJob->setEntity($entity);
                             $configuratorJob->setPool($pool);
                             $configuratorJob->setAlgorithm($configuratorAlgorithm);
@@ -668,10 +668,16 @@ class IndexAction extends AbstractAction
                                             $configuratorJob->setPool($pool);
                                             continue;
                                         }
+
                                         if ($key == 'timeToRun') {
                                             $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['timeToRun']));
                                             continue;
                                         }
+
+                                        if ($key == 'options') {
+                                            $value = json_decode($value, true);
+                                        }
+
                                         $configuratorJob->{'set' . ucfirst($key)}($value);
                                     }
                                 }
