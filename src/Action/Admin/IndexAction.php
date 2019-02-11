@@ -48,6 +48,7 @@ use Stagem\ZfcConfigurator\Model\ConfiguratorJob;
 use Popov\ZfcEntity\Model\Module;
 use Stagem\ZfcConfigurator\Service\ConfiguratorAlgorithmService;
 use Stagem\ZfcConfigurator\Service\ConfiguratorJobService;
+use Stagem\ZfcProgress\Model\Progress;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\Diactoros\Response\JsonResponse;
 use Zend\Diactoros\Response\TextResponse;
@@ -189,6 +190,28 @@ class IndexAction extends AbstractAction
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'products' => [
+                        'type' => Type::listOf($this->types->getOutput(Product::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Product::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Product::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
 
                             return $result;
                         },
@@ -478,6 +501,27 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
+                    'notifications' => [
+                        'type' => Type::listOf($this->types->getOutput(Progress::class)),
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Progress::class),
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Progress::class),
+                            ]
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Progress::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        }
+                    ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
@@ -538,7 +582,7 @@ class IndexAction extends AbstractAction
                             $method = explode('::', $algorithm->getCallback());
                             $entity = $this->serviceManager->get($method[0]);
 
-                            return call_user_func_array([$entity, $method[1]], [$job]);
+                            return call_user_func_array([$entity, $method[1]], [$job, null]);
                         },
                     ],
 
@@ -694,6 +738,26 @@ class IndexAction extends AbstractAction
                                 return new \Exception('Configurator job not found');
                             }
                         }
+                    ],
+
+                    'recountNotification' => [
+                        'type' => Type::string(),
+                        'args' => [
+                            'itemId' => Type::nonNull(Type::id()),
+                            'options' => Type::nonNull(Type::string()),
+                            'configuratorJob' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['configuratorJob']]);
+                            $algorithm = $configuratorJob->getAlgorithm();
+
+                            $method = explode('::', $algorithm->getCallback());
+                            $entity = $this->serviceManager->get($method[0]);
+
+                            $configuratorJob->setOptions(json_decode($args['options'], true));
+
+                            return call_user_func_array([$entity, $method[1]], [$configuratorJob, $args['itemId']]);
+                        },
                     ],
                 ],
             ]);
