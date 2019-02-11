@@ -759,6 +759,26 @@ class IndexAction extends AbstractAction
                             return call_user_func_array([$entity, $method[1]], [$configuratorJob, $args['itemId']]);
                         },
                     ],
+
+                    'updateNotificationStatus' => [
+                        'type' => Type::nonNull($this->types->getOutput(Progress::class)),
+                        'args' => [
+                            'id' => Type::nonNull(Type::id()),
+                            'extra' => Type::nonNull(Type::string())
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $notification = $this->entityManager->getRepository(Progress::class)->findOneBy(['id' => $args['id']]);
+
+                            $extra = $notification->getExtra();
+                            $extra['status'] = json_decode($args['extra'], true);
+                            $notification->setExtra($extra);
+
+                            $this->entityManager->merge($notification);
+                            $this->entityManager->flush();
+
+                            return $notification;
+                        },
+                    ],
                 ],
             ]);
 
