@@ -42,13 +42,16 @@ use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
 use Stagem\Review\Model\Review;
 use Stagem\Shipment\Model\Shipment;
-use Stagem\ZfcConfigurator\Model\ConfiguratorAlgorithm;
-use Stagem\ZfcConfigurator\Model\ConfiguratorItem;
-use Stagem\ZfcConfigurator\Model\ConfiguratorJob;
+use Stagem\Configurator\Model\ConfiguratorAlgorithm;
+use Stagem\Configurator\Model\ConfiguratorItem;
+use Stagem\Configurator\Model\ConfiguratorJob;
 use Popov\ZfcEntity\Model\Module;
-use Stagem\ZfcConfigurator\Service\ConfiguratorAlgorithmService;
-use Stagem\ZfcConfigurator\Service\ConfiguratorJobService;
+use Stagem\Configurator\Service\ConfiguratorAlgorithmService;
+use Stagem\Configurator\Service\ConfiguratorJobService;
 use Stagem\ZfcProgress\Model\Progress;
+use Stagem\ZfcStatus\Model\Status;
+use Stagem\ZfcStatus\Service\StatusChanger;
+use Stagem\ZfcStatus\Service\StatusService;
 use Zend\Diactoros\Response\EmptyResponse;
 use Zend\Diactoros\Response\JsonResponse;
 use Zend\Diactoros\Response\TextResponse;
@@ -522,6 +525,27 @@ class IndexAction extends AbstractAction
                             return $result;
                         }
                     ],
+
+                    'statuses' => [
+                        'type' => Type::listOf($this->types->getOutput(Status::class)),
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Status::class),
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Status::class),
+                            ]
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Status::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        }
+                    ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
@@ -657,7 +681,7 @@ class IndexAction extends AbstractAction
                             'isBad' => Type::nonNull(Type::int()),
                             'when' => Type::nonNull(Type::string()),
                             'day' => Type::int(),
-                            'time' => Type::nonNull(Type::string()),
+                            'time' => Type::string(),
                             'options' => Type::nonNull(Type::string()),
                             'entity' => Type::nonNull(Type::id()),
                             'pool' => Type::nonNull(Type::id()),
@@ -676,7 +700,7 @@ class IndexAction extends AbstractAction
                             if ($args['when'] != 'everyday') {
                                 $configuratorJob->setDayOfWhen($args['day']);
                             }
-                            $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['time']));
+                            $configuratorJob->setTimeToRun($args['time'] ? \DateTime::createFromFormat("H:i", $args['time']) : null);
                             $configuratorJob->setOptions(json_decode($args['options'], true));
                             $configuratorJob->setEntity($entity);
                             $configuratorJob->setPool($pool);
@@ -760,23 +784,22 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'updateNotificationStatus' => [
+                    'changeNotificationStatus' => [
                         'type' => Type::nonNull($this->types->getOutput(Progress::class)),
                         'args' => [
-                            'id' => Type::nonNull(Type::id()),
-                            'extra' => Type::nonNull(Type::string())
+                            'itemMnemo' => Type::nonNull(Type::string()),
+                            'itemId' => Type::nonNull(Type::id()),
+                            'statusId' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $notification = $this->entityManager->getRepository(Progress::class)->findOneBy(['id' => $args['id']]);
+                            /** @var StatusChanger $serviceChanger */
+                            $serviceChanger = $this->serviceManager->get(StatusChanger::class);
 
-                            $extra = $notification->getExtra();
-                            $extra['status'] = json_decode($args['extra'], true);
-                            $notification->setExtra($extra);
+                            $serviceChanger->change($args['itemMnemo'], $args['itemId'], $args['statusId']);
 
-                            $this->entityManager->merge($notification);
-                            $this->entityManager->flush();
+                            $modifiedNotification = $this->entityManager->getRepository(Progress::class)->findOneBy(['id' => $args['itemId']]);
 
-                            return $notification;
+                            return $modifiedNotification;
                         },
                     ],
                 ],
