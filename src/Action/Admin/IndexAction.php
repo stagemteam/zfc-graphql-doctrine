@@ -784,7 +784,8 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'changeNotificationStatus' => [
+                    //Еhe decision was made to return exactly Progress class
+                    'changeStatus' => [
                         'type' => Type::nonNull($this->types->getOutput(Progress::class)),
                         'args' => [
                             'itemMnemo' => Type::nonNull(Type::string()),
