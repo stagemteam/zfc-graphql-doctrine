@@ -588,7 +588,7 @@ class IndexAction extends AbstractAction
                     ],
 
                     'runJob' => [
-                        'type' => Type::string(),
+                        'type' => Type::listOf(Type::string()),
                         'args' => [
                             'jobId' => Type::nonNull(Type::string()), // Use standard API when needed
                         ],
