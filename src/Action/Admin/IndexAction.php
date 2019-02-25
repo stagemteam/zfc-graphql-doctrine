@@ -803,6 +803,24 @@ class IndexAction extends AbstractAction
                             return $modifiedNotification;
                         },
                     ],
+
+                    'updateOrdersIsTester' => [
+                        'type' => Type::listOf(Type::nonNull($this->types->getOutput(MarketOrder::class))),
+                        'args' => [
+                            'orders' => Type::listOf(Type::nonNull(Type::string()))
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $orders = $this->entityManager->getRepository(MarketOrder::class)->findBy(['code' => $args['orders']]);
+
+                            foreach ($orders as $order) {
+                                $order->setIsTest(true);
+                                $this->entityManager->merge($order);
+                            }
+                            $this->entityManager->flush();
+
+                            return $orders;
+                        },
+                    ],
                 ],
             ]);
 
