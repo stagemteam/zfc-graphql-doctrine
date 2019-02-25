@@ -150,11 +150,11 @@ class IndexAction extends AbstractAction
                             'startedAt' => $this->types->get(\DateTime::class),
                             'endedAt' => $this->types->get(\DateTime::class),
                         ],
-                        'resolve' => function ($root, $args) {
+                        'resolve' => function ($root, $args, $ontext) {
                             $historyChartService = $this->container->get(HistoryChartService::class);
 
                             $product = $this->entityManager->find(Product::class, $args['productIds'][0]);
-                            $marketplace = $this->entityManager->find(Marketplace::class, 1);
+                            $marketplace = $this->pool()->current();
 
                             $result = $historyChartService->prepareChartData($product, $marketplace, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
 
