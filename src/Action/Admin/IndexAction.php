@@ -36,6 +36,7 @@ use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Order\Model\MarketOrder;
+use Stagem\Order\Model\OrderSummary;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
@@ -291,11 +292,13 @@ class IndexAction extends AbstractAction
                             'id' => Type::nonNull(Type::id())
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
-
+                            $queryBuilder =
+                                $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [],
+                                    $args['sorting'] ?? []);
                             $result = $queryBuilder->getQuery()->getArrayResult();
 
                             return $result;
+
                         },
                     ],
 
@@ -421,6 +424,7 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
                     'modules' => [
                         'type' => Type::listOf($this->types->getOutput(Module::class)), // Use automated ObjectType for output
                         'args' => [
@@ -545,6 +549,28 @@ class IndexAction extends AbstractAction
 
                             return $result;
                         }
+                    ],
+
+                    'orderSummary' => [
+                        'type' => Type::listOf($this->types->getOutput(OrderSummary::class)), // Use automated ObjectType for output
+                        'description' => 'Returns all OrderSummary',
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(OrderSummary::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(OrderSummary::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
                     ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
