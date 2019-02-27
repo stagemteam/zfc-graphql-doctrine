@@ -36,6 +36,7 @@ use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Order\Model\MarketOrder;
+use Stagem\Order\Model\OrderSummary;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
@@ -540,6 +541,27 @@ class IndexAction extends AbstractAction
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Status::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+                            return $result;
+                        }
+                    ],
+
+                    'ordersSummaries' => [
+                        'type' => Type::listOf($this->types->getOutput(OrderSummary::class)),
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(OrderSummary::class),
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(OrderSummary::class),
+                            ]
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $queryBuilder->getQuery()->getResult();
 
