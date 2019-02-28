@@ -157,7 +157,7 @@ class IndexAction extends AbstractAction
                             $product = $this->entityManager->find(Product::class, $args['productIds'][0]);
                             $marketplace = $this->entityManager->find(Marketplace::class, 1);
 
-                            $result = $historyChartService->prepareChartData($product, $marketplace, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
+                            $result = $historyChartService->prepareChartData($marketplace, $product, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
 
                             return $result;
                         },
