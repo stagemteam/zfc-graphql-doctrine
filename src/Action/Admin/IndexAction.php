@@ -548,7 +548,7 @@ class IndexAction extends AbstractAction
                         }
                     ],
 
-                    'ordersSummaries' => [
+                    'orderSummaries' => [
                         'type' => Type::listOf($this->types->getOutput(OrderSummary::class)),
                         'args' => [
                             [
@@ -561,9 +561,12 @@ class IndexAction extends AbstractAction
                             ]
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            //$marketplace = $this->pool()->current();
+                            //$args['filter']['marketplace'] = $marketplace;
+                            
+                            $qb = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
-                            $result = $queryBuilder->getQuery()->getResult();
+                            $result = $qb->getQuery()->getResult();
 
                             return $result;
                         }
