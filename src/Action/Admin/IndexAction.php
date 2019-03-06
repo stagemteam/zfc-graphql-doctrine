@@ -147,15 +147,18 @@ class IndexAction extends AbstractAction
                         'description' => 'Returns Rank Tracking in certain period',
                         'args' => [
                             'productIds' => Type::nonNull(Type::listOf(Type::nonNull(Type::id()))),
-
                             'startedAt' => $this->types->get(\DateTime::class),
                             'endedAt' => $this->types->get(\DateTime::class),
+                            'marketplace' => Type::id(),
                         ],
                         'resolve' => function ($root, $args) {
                             $historyChartService = $this->container->get(HistoryChartService::class);
 
                             $product = $this->entityManager->find(Product::class, $args['productIds'][0]);
-                            $marketplace = $this->pool()->current();
+                            $marketplace = $args['marketplace'] ?
+                                $this->entityManager->getRepository(Marketplace::class)
+                                    ->findOneBy(['id' => $args['marketplace']]) :
+                                $this->pool()->current();
 
                             $result = $historyChartService->prepareChartData($marketplace, $product, ['startedAt' => $args['startedAt'], 'endedAt' => $args['endedAt']], 1);
 
@@ -563,7 +566,7 @@ class IndexAction extends AbstractAction
                         'resolve' => function ($root, $args) {
                             //$marketplace = $this->pool()->current();
                             //$args['filter']['marketplace'] = $marketplace;
-                            
+
                             $qb = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $qb->getQuery()->getResult();
