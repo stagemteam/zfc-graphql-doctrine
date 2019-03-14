@@ -42,6 +42,7 @@ use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
 use Stagem\Review\Model\Review;
+use Stagem\Review\Service\ReviewService;
 use Stagem\Shipment\Model\Shipment;
 use Stagem\Configurator\Model\ConfiguratorAlgorithm;
 use Stagem\Configurator\Model\ConfiguratorItem;
@@ -236,6 +237,33 @@ class IndexAction extends AbstractAction
 
                             return $item;
 
+                        },
+                    ],
+
+                    'reviewStars' => [
+                        'type' => Type::listOf(new \GraphQL\Type\Definition\ObjectType([
+                            'name' => 'reviewStar',
+                            'fields' => [
+                                'rate' => Type::nonNull(Type::string()),
+                                'rateCount' => Type::nonNull(Type::string()),
+                                'createdAt' => $this->types->get(\DateTime::class)
+                            ],
+                        ])),
+                        'args' => [
+                            'marketplace' => Type::id(),
+                            'startedAt' => $this->types->get(\DateTime::class),
+                            'endedAt' => $this->types->get(\DateTime::class),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $marketplace = isset($args['marketplace']) ? $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['marketplace']]) : null;
+                            $dates['startedAt'] = $args['startedAt'];
+                            $dates['endedAt'] = $args['endedAt'];
+
+
+                            $data = $this->serviceManager->get(ReviewService::class)
+                                ->getReviewsStarsWithDates($marketplace, $dates);
+
+                            return $data;
                         },
                     ],
 
