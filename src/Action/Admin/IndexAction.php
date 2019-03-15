@@ -37,6 +37,8 @@ use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Order\Model\OrderSummary;
+use Stagem\Order\Parser\OrderSummaryParser;
+use Stagem\Order\Service\OrderSummaryService;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
@@ -838,13 +840,45 @@ class IndexAction extends AbstractAction
                             'orders' => Type::listOf(Type::nonNull(Type::string()))
                         ],
                         'resolve' => function ($root, $args) {
+                            // fixed bug with loosing last order causing \t symbol in the end
+                            foreach ($args['orders'] as $key => $order) {
+                                $args['orders'][$key] = trim($order);
+                            }
                             $orders = $this->entityManager->getRepository(MarketOrder::class)->findBy(['code' => $args['orders']]);
+                            //$ordersSummary =
+
+                            $marketplace = $this->pool()->current();
+                            $dates = [];
+                            $orderSummaryRows = [];
 
                             foreach ($orders as $order) {
                                 $order->setIsTest(true);
                                 $this->entityManager->merge($order);
+                                $orderPurchaseAt = (clone $order->getPurchaseAt())->setTime(0,0);
+                                if(!isset($orderSummaryRows[$orderPurchaseAt->format('Y-m-d')])){
+                                    //$dates[$orderPurchaseAt->format('Y-m-d')] = $orderPurchaseAt->setTime(0,0);
+                                    $fromRepository = $this->entityManager->getRepository(OrderSummary::class)
+                                        ->findBy([
+                                            'marketplace' => $marketplace,
+                                            'date' => $orderPurchaseAt
+                                        ]);
+                                    $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] =
+                                        array_pop($fromRepository);
+                                }
                             }
                             $this->entityManager->flush();
+
+
+
+                            $orderSummaryService = $this->container->get(OrderSummaryService::class);
+                            $summaryParser = new OrderSummaryParser($orderSummaryService);
+
+                            $orderSummaryRows = $summaryParser->processCertainDates($orderSummaryRows, $marketplace);
+
+                            foreach ($orderSummaryRows as $summaryRow){
+                                $this->entityManager->merge($summaryRow);
+                            }
+                            $this->entityManager->flush(); //updated orderSummary table
 
                             return $orders;
                         },
