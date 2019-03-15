@@ -245,8 +245,9 @@ class IndexAction extends AbstractAction
                             'name' => 'reviewStar',
                             'fields' => [
                                 'rate' => Type::nonNull(Type::string()),
-                                'rateCount' => Type::nonNull(Type::string()),
-                                'createdAt' => $this->types->get(\DateTime::class)
+                                'rateCount' => Type::nonNull(Type::int()),
+                                'createdAt' => $this->types->get(\DateTime::class),
+                                'isRemoved' => Type::nonNull(Type::int()),
                             ],
                         ])),
                         'args' => [
