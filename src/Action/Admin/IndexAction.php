@@ -35,6 +35,7 @@ use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
+use Stagem\Notification\Model\Notification;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Order\Model\OrderSummary;
 use Stagem\Order\Parser\OrderSummaryParser;
@@ -541,19 +542,19 @@ class IndexAction extends AbstractAction
                     ],
 
                     'notifications' => [
-                        'type' => Type::listOf($this->types->getOutput(Progress::class)),
+                        'type' => Type::listOf($this->types->getOutput(Notification::class)),
                         'args' => [
                             [
                                 'name' => 'filter',
-                                'type' => $this->types->getFilter(Progress::class),
+                                'type' => $this->types->getFilter(Notification::class),
                             ],
                             [
                                 'name' => 'sorting',
-                                'type' => $this->types->getSorting(Progress::class),
+                                'type' => $this->types->getSorting(Notification::class),
                             ]
                         ],
                         'resolve' => function ($root, $args) {
-                            $queryBuilder = $this->types->createFilteredQueryBuilder(Progress::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Notification::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                             $result = $queryBuilder->getQuery()->getResult();
 
@@ -845,7 +846,7 @@ class IndexAction extends AbstractAction
 
                     //Еhe decision was made to return exactly Progress class
                     'changeStatus' => [
-                        'type' => Type::nonNull($this->types->getOutput(Progress::class)),
+                        'type' => Type::nonNull($this->types->getOutput(Notification::class)),
                         'args' => [
                             'itemMnemo' => Type::nonNull(Type::string()),
                             'itemId' => Type::nonNull(Type::id()),
@@ -857,7 +858,7 @@ class IndexAction extends AbstractAction
 
                             $serviceChanger->change($args['itemMnemo'], $args['itemId'], $args['statusId']);
 
-                            $modifiedNotification = $this->entityManager->getRepository(Progress::class)->findOneBy(['id' => $args['itemId']]);
+                            $modifiedNotification = $this->entityManager->getRepository(Notification::class)->findOneBy(['id' => $args['itemId']]);
 
                             return $modifiedNotification;
                         },
