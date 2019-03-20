@@ -243,6 +243,27 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    'reviews' => [
+                        'type' => Type::listOf($this->types->getOutput(Review::class)), // Use automated ObjectType for output
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(Review::class), // Use automated filtering options
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(Review::class), // Use automated sorting options
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getArrayResult();
+
+                            return $result;
+                        },
+                    ],
+
                     'reviewStars' => [
                         'type' => Type::listOf(new \GraphQL\Type\Definition\ObjectType([
                             'name' => 'reviewStar',
@@ -911,6 +932,44 @@ class IndexAction extends AbstractAction
                             $this->entityManager->flush(); //updated orderSummary table
 
                             return $orders;
+                        },
+                    ],
+
+                    'updateReviewsIsTester' => [
+                        'type' => Type::listOf(Type::nonNull($this->types->getOutput(Review::class))),
+                        'args' => [
+                            'reviewData' => Type::listOf(Type::nonNull(Type::string())),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $reviews = [];
+                            $data = $args['reviewData'];
+                            /**
+                             * @var Review $review
+                             * @var MarketOrder $order
+                             */
+                            foreach ($data as $item) {
+                                $parsedItem = json_decode($item, true);
+                                $review = $this->entityManager->getRepository(Review::class)->findOneBy(['code' => $parsedItem['reviewCode']]);
+                                $order = $this->entityManager->getRepository(MarketOrder::class)->findOneBy(['code' => $parsedItem['orderCode']]);
+
+                                if ($review && $order) {
+                                    $review->setIsTest(true);
+                                    $review->setOrder($order);
+                                    $review->setOrderCode($order->getCode());
+                                    $order->setIsTest(true);
+
+                                    $this->entityManager->merge($review);
+                                    $this->entityManager->merge($order);
+                                    $reviews[] = $review;
+                                } elseif ($review) {
+                                    $review->setIsTest(true);
+                                    $this->entityManager->merge($review);
+                                }
+                            }
+
+                            $this->entityManager->flush();
+
+                            return $reviews;
                         },
                     ],
                 ],
