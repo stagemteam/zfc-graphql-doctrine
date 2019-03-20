@@ -74,7 +74,8 @@ class GraphQLMiddleware implements MiddlewareInterface
             if (isset($bodyParams['operationName']) && $bodyParams['operationName'] === 'LoginMutation') {
                 $authService = $this->auth->getAuthService();
                 if (!$authService->hasIdentity()) {
-                    $this->login($request = $request->withParsedBody($bodyParams['variables']));
+                    $user = $this->login($request = $request->withParsedBody($bodyParams['variables']));
+                    $this->userService->setCurrent($user);
                 }
             }
         }
