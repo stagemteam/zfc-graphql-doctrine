@@ -949,8 +949,10 @@ class IndexAction extends AbstractAction
                              */
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
-                                $review = $this->entityManager->getRepository(Review::class)->findOneBy(['code' => $parsedItem['reviewCode']]);
-                                $order = $this->entityManager->getRepository(MarketOrder::class)->findOneBy(['code' => $parsedItem['orderCode']]);
+                                $review = isset($parsedItem['reviewCode']) ?
+                                    $this->entityManager->getRepository(Review::class)->findOneBy(['code' => $parsedItem['reviewCode']]) : null;
+                                $order = isset($parsedItem['orderCode']) ?
+                                    $this->entityManager->getRepository(MarketOrder::class)->findOneBy(['code' => $parsedItem['orderCode']]) : null;
 
                                 if ($review && $order) {
                                     $review->setIsTest(true);
@@ -964,6 +966,7 @@ class IndexAction extends AbstractAction
                                 } elseif ($review) {
                                     $review->setIsTest(true);
                                     $this->entityManager->merge($review);
+                                    $reviews[] = $review;
                                 }
                             }
 
