@@ -46,6 +46,8 @@ use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
 use Stagem\Review\Model\Review;
 use Stagem\Review\Service\ReviewService;
+use Stagem\ReviewPlan\Model\ReviewPlan;
+use Stagem\ReviewPlan\Service\ReviewPlanService;
 use Stagem\Shipment\Model\Shipment;
 use Stagem\Configurator\Model\ConfiguratorAlgorithm;
 use Stagem\Configurator\Model\ConfiguratorItem;
@@ -722,6 +724,7 @@ class IndexAction extends AbstractAction
                             return new \Exception('Nothing was added.');
                         },
                     ],
+
                     'deleteConfiguratorItem' => [
                         'type' => Type::listOf(Type::nonNull($this->types->getOutput(ConfiguratorItem::class))),
                         'args' => [
@@ -973,6 +976,26 @@ class IndexAction extends AbstractAction
                             $this->entityManager->flush();
 
                             return $reviews;
+                        },
+                    ],
+
+                    'orderReviews' => [
+                        'type' => Type::listOf($this->types->getOutput(ReviewPlan::class)),
+                        'args' => [
+                            'orderReviewsData' => Type::nonNull(Type::string()),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $reviewsPlans = [];
+                            /** @var ReviewPlanService $reviewPlan */
+                            $reviewPlan = $this->serviceManager->get(ReviewPlanService::class);
+
+                            if (isset($args['orderReviewsData'])) {
+                                $reviewsPlans = $reviewPlan->orderReviews($args['orderReviewsData']);
+
+                                $this->entityManager->flush();
+                            }
+
+                            return $reviewsPlans;
                         },
                     ],
                 ],
