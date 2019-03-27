@@ -35,6 +35,7 @@ use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
+use Stagem\Keyword\Model\Keyword;
 use Stagem\Notification\Model\Notification;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Order\Model\OrderSummary;
@@ -197,7 +198,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Product::class), // Use automated ObjectType for output
                         'description' => 'Returns product by id (in range of 1-6)',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -298,7 +299,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Customer::class), // Use automated ObjectType for output
                         'description' => 'Returns customer by id (in range of 1-6)',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Customer::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -313,7 +314,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Shipment::class), // Use automated ObjectType for output
                         'description' => 'Returns shipment by id (in range of 1-6)',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Shipment::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -328,7 +329,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(MarketOrder::class), // Use automated ObjectType for output
                         'description' => 'Returns order by id',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
 //                            $queryBuilder = $this->types->createFilteredQueryBuilder(MarketOrder::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -347,7 +348,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Marketplace::class), // Use automated ObjectType for output
                         'description' => 'Returns marketplace by id (in range of 1-6)',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Marketplace::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -383,7 +384,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Role::class), // Use automated ObjectType for output
                         'description' => 'Returns user by id',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Role::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -398,7 +399,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(User::class), // Use automated ObjectType for output
                         'description' => 'Returns user by id',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(User::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -436,7 +437,7 @@ class IndexAction extends AbstractAction
                         'type' => $this->types->getOutput(Entity::class), // Use automated ObjectType for output
                         'description' => 'Returns product by id (in range of 1-6)',
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Entity::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -472,7 +473,7 @@ class IndexAction extends AbstractAction
                     'module' => [
                         'type' => $this->types->getOutput(Module::class), // Use automated ObjectType for output
                         'args' => [
-                            'id' => Type::nonNull(Type::id())
+                            'id' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $result = $this->entityManager->find(Module::class, $args['id']);
@@ -574,7 +575,7 @@ class IndexAction extends AbstractAction
                             [
                                 'name' => 'sorting',
                                 'type' => $this->types->getSorting(Notification::class),
-                            ]
+                            ],
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Notification::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -582,7 +583,7 @@ class IndexAction extends AbstractAction
                             $result = $queryBuilder->getQuery()->getResult();
 
                             return $result;
-                        }
+                        },
                     ],
 
                     'statuses' => [
@@ -595,7 +596,7 @@ class IndexAction extends AbstractAction
                             [
                                 'name' => 'sorting',
                                 'type' => $this->types->getSorting(Status::class),
-                            ]
+                            ],
                         ],
                         'resolve' => function ($root, $args) {
                             $queryBuilder = $this->types->createFilteredQueryBuilder(Status::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -603,7 +604,7 @@ class IndexAction extends AbstractAction
                             $result = $queryBuilder->getQuery()->getResult();
 
                             return $result;
-                        }
+                        },
                     ],
 
                     'orderSummaries' => [
@@ -616,7 +617,7 @@ class IndexAction extends AbstractAction
                             [
                                 'name' => 'sorting',
                                 'type' => $this->types->getSorting(OrderSummary::class),
-                            ]
+                            ],
                         ],
                         'resolve' => function ($root, $args) {
                             //$marketplace = $this->pool()->current();
@@ -627,12 +628,12 @@ class IndexAction extends AbstractAction
                             $result = $qb->getQuery()->getResult();
 
                             return $result;
-                        }
+                        },
                     ],
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
-                }
+                },
             ]);
 
             $mutationType = new ObjectType([
@@ -652,8 +653,8 @@ class IndexAction extends AbstractAction
                         'type' => new \GraphQL\Type\Definition\ObjectType([
                             'name' => 'Token',
                             'fields' => [
-                                'token' => Type::nonNull(Type::string())
-                            ]
+                                'token' => Type::nonNull(Type::string()),
+                            ],
                         ]),
                         'args' => [
                             'email' => Type::nonNull(Type::string()), // Use standard API when needed
@@ -698,7 +699,7 @@ class IndexAction extends AbstractAction
                         'args' => [
                             'itemId' => Type::listOf(Type::nonNull(Type::int())),
                             'entity' => Type::nonNull(Type::id()),
-                            'configuratorJob' => Type::nonNull(Type::id())
+                            'configuratorJob' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
@@ -730,7 +731,7 @@ class IndexAction extends AbstractAction
                         'args' => [
                             'itemId' => Type::listOf(Type::nonNull(Type::int())),
                             'entity' => Type::nonNull(Type::id()),
-                            'configuratorJob' => Type::nonNull(Type::id())
+                            'configuratorJob' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $itemsIds = $args['itemId'];
@@ -743,7 +744,7 @@ class IndexAction extends AbstractAction
                                             [
                                                 'itemId' => $itemsId,
                                                 'entity' => $args['entity'],
-                                                'configuratorJob' => $args['configuratorJob']
+                                                'configuratorJob' => $args['configuratorJob'],
                                             ]);
                                     array_push($configuratorItems, $configuratorItem);
                                     $this->entityManager->remove($configuratorItem);
@@ -769,7 +770,7 @@ class IndexAction extends AbstractAction
                             'options' => Type::nonNull(Type::string()),
                             'entity' => Type::nonNull(Type::id()),
                             'pool' => Type::nonNull(Type::id()),
-                            'configuratorAlgorithm' => Type::nonNull(Type::id())
+                            'configuratorAlgorithm' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function($root, $args) {
                             $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
@@ -793,7 +794,7 @@ class IndexAction extends AbstractAction
                             $this->entityManager->flush();
 
                             return $configuratorJob;
-                        }
+                        },
                     ],
 
                     'updateConfiguratorJob' => [
@@ -845,7 +846,7 @@ class IndexAction extends AbstractAction
                             } else {
                                 return new \Exception('Configurator job not found');
                             }
-                        }
+                        },
                     ],
 
                     'recountNotification' => [
@@ -853,7 +854,7 @@ class IndexAction extends AbstractAction
                         'args' => [
                             'itemId' => Type::nonNull(Type::id()),
                             'options' => Type::nonNull(Type::string()),
-                            'configuratorJob' => Type::nonNull(Type::id())
+                            'configuratorJob' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['configuratorJob']]);
@@ -874,7 +875,7 @@ class IndexAction extends AbstractAction
                         'args' => [
                             'itemMnemo' => Type::nonNull(Type::string()),
                             'itemId' => Type::nonNull(Type::id()),
-                            'statusId' => Type::nonNull(Type::id())
+                            'statusId' => Type::nonNull(Type::id()),
                         ],
                         'resolve' => function ($root, $args) {
                             /** @var StatusChanger $serviceChanger */
@@ -891,7 +892,7 @@ class IndexAction extends AbstractAction
                     'updateOrdersIsTester' => [
                         'type' => Type::listOf(Type::nonNull($this->types->getOutput(MarketOrder::class))),
                         'args' => [
-                            'orders' => Type::listOf(Type::nonNull(Type::string()))
+                            'orders' => Type::listOf(Type::nonNull(Type::string())),
                         ],
                         'resolve' => function ($root, $args) {
                             // fixed bug with loosing last order causing \t symbol in the end
@@ -914,7 +915,7 @@ class IndexAction extends AbstractAction
                                     $fromRepository = $this->entityManager->getRepository(OrderSummary::class)
                                         ->findBy([
                                             'marketplace' => $marketplace,
-                                            'date' => $orderPurchaseAt
+                                            'date' => $orderPurchaseAt,
                                         ]);
                                     $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] =
                                         array_pop($fromRepository);
@@ -996,6 +997,100 @@ class IndexAction extends AbstractAction
                             }
 
                             return $reviewsPlans;
+                        },
+                    ],
+
+                    'addListKeywords' => [
+                        'type' => Type::listOf(Type::nonNull($this->types->getOutput(Keyword::class))),
+                        'args' => [
+                            'keywordData' => Type::listOf(Type::nonNull(Type::string())),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $keywords = [];
+                            $data = $args['keywordData'];
+                            /**
+                             * @var Keyword $keywords
+                             */
+                            foreach ($data as $item) {
+                                $parsedItem = json_decode($item, true);
+
+                                /** @var Marketplace $marketplace */
+                                $marketplace = isset($parsedItem['marketplace']) ?
+                                    $this->entityManager->getRepository(Marketplace::class)
+                                        ->findOneBy(['id' => $parsedItem['marketplace']]) : null;
+
+                                /** @var Product $product */
+                                $product = isset($parsedItem['asin']) ?
+                                    $this->entityManager->getRepository(Product::class)
+                                        ->findOneBy(['asin' => $parsedItem['asin']]) : null;
+
+                                $keyword = isset($parsedItem['keyword']) ? $parsedItem['keyword'] : null;
+
+                                $isMain = isset($parsedItem['isMain']) ? $parsedItem['isMain'] : 0;
+
+                                /** @var Keyword $newKeyword */
+                                if ($marketplace && $product && $keyword) {
+
+                                    /** @var Keyword $keywordExists */
+                                    $keywordExists = $this->entityManager->getRepository(Keyword::class)
+                                        ->findOneBy([
+                                            'product' => $product,
+                                            'marketplace' => $marketplace,
+                                            'keyword' => $keyword
+                                        ]);
+
+                                    if (!$keywordExists) {
+                                        if ($isMain == 1) {
+                                            $isMainKeywords = $this->entityManager->getRepository(Keyword::class)
+                                                ->findBy([
+                                                    'product' => $product,
+                                                    'marketplace' => $marketplace,
+                                                    'isMain' => 1
+                                                ]);
+
+                                            /** @var Keyword $isMainKeyword */
+                                            foreach ($isMainKeywords as $isMainKeyword) {
+                                                $isMainKeyword->setIsMain(0);
+                                                $this->entityManager->merge($isMainKeyword);
+                                            }
+                                        }
+
+                                        $newKeyword = new Keyword();
+                                        $newKeyword->setProduct($product);
+                                        $newKeyword->setMarketplace($marketplace);
+                                        $newKeyword->setKeyword($keyword);
+                                        $newKeyword->setIsMain($isMain);
+
+                                        $this->entityManager->persist($newKeyword);
+                                        $keywords[] = $newKeyword;
+                                    } else {
+                                        if ($isMain != $keywordExists->getisMain()) {
+                                            if ($isMain == 1) {
+                                                $isMainKeywords = $this->entityManager->getRepository(Keyword::class)
+                                                    ->findBy([
+                                                        'product' => $product,
+                                                        'marketplace' => $marketplace,
+                                                        'isMain' => 1
+                                                    ]);
+
+                                                /** @var Keyword $isMainKeyword */
+                                                foreach ($isMainKeywords as $isMainKeyword) {
+                                                    $isMainKeyword->setIsMain(0);
+                                                    $this->entityManager->merge($isMainKeyword);
+                                                }
+                                            }
+
+                                            $keywordExists->setIsMain($isMain);
+                                            $this->entityManager->merge($keywordExists);
+                                            $keywords[] = $keywordExists;
+                                        }
+                                    }
+                                }
+                            }
+
+                            $this->entityManager->flush();
+
+                            return $keywords;
                         },
                     ],
                 ],
