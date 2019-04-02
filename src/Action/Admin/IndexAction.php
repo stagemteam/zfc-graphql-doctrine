@@ -36,11 +36,13 @@ use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Keyword\Model\Keyword;
+use Stagem\Keyword\Model\ListMatchingProduct;
 use Stagem\Notification\Model\Notification;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Order\Model\OrderSummary;
 use Stagem\Order\Parser\OrderSummaryParser;
 use Stagem\Order\Service\OrderSummaryService;
+use Stagem\Parser\Service\ParserService;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
@@ -1036,7 +1038,7 @@ class IndexAction extends AbstractAction
                                         ->findOneBy([
                                             'product' => $product,
                                             'marketplace' => $marketplace,
-                                            'keyword' => $keyword
+                                            'keyword' => $keyword,
                                         ]);
 
                                     if (!$keywordExists) {
@@ -1045,7 +1047,7 @@ class IndexAction extends AbstractAction
                                                 ->findBy([
                                                     'product' => $product,
                                                     'marketplace' => $marketplace,
-                                                    'isMain' => 1
+                                                    'isMain' => 1,
                                                 ]);
 
                                             /** @var Keyword $isMainKeyword */
@@ -1070,7 +1072,7 @@ class IndexAction extends AbstractAction
                                                     ->findBy([
                                                         'product' => $product,
                                                         'marketplace' => $marketplace,
-                                                        'isMain' => 1
+                                                        'isMain' => 1,
                                                     ]);
 
                                                 /** @var Keyword $isMainKeyword */
@@ -1088,6 +1090,37 @@ class IndexAction extends AbstractAction
                                 }
                             }
 
+                            $this->entityManager->flush();
+
+                            return $keywords;
+                        },
+                    ],
+
+                    'listMatchingProduct' => [
+                        'type' => Type::listOf($this->types->getOutput(ListMatchingProduct::class)),
+                        'args' => [
+                            'keywords' => Type::listOf(Type::nonNull(Type::string())),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $keywords = $this->entityManager->getRepository(Keyword::class)->findBy(['keyword' => $args['keywords']]);
+
+                            /** @var Keyword $keyword */
+                            foreach ($keywords as $keyword) {
+                                $keyword->setIsNeedParse(1);
+                                $this->entityManager->merge($keyword);
+                            }
+                            $this->entityManager->flush();
+
+                            /** @var ParserService $parserService */
+                            $parserService = $this->serviceManager->get(ParserService::class);
+
+                            $parserService->parse('stagem-keyword-list-matching-product-parse');
+
+                            /** @var Keyword $keyword */
+                            foreach ($keywords as $keyword) {
+                                $keyword->setIsNeedParse(0);
+                                $this->entityManager->merge($keyword);
+                            }
                             $this->entityManager->flush();
 
                             return $keywords;
