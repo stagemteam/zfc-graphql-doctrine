@@ -1102,28 +1102,37 @@ class IndexAction extends AbstractAction
                             'keywords' => Type::listOf(Type::nonNull(Type::string())),
                         ],
                         'resolve' => function ($root, $args) {
+                            $listMatchingProducts = [];
+
                             $keywords = $this->entityManager->getRepository(Keyword::class)->findBy(['keyword' => $args['keywords']]);
 
-                            /** @var Keyword $keyword */
-                            foreach ($keywords as $keyword) {
-                                $keyword->setIsNeedParse(1);
-                                $this->entityManager->merge($keyword);
+                            if (!empty($keywords)) {
+                                /** @var Keyword $keyword */
+                                foreach ($keywords as $keyword) {
+                                    $keyword->setIsNeedParse(1);
+                                    $this->entityManager->merge($keyword);
+                                }
+                                $this->entityManager->flush();
+
+                                $lastListMatchingProductId = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->getLastInserted()->getQuery()->getSingleScalarResult();
+
+                                /** @var ParserService $parserService */
+                                $parserService = $this->serviceManager->get(ParserService::class);
+                                $parserService->parse('stagem-keyword-list-matching-product-parse');
+
+                                /** @var Keyword $keyword */
+                                foreach ($keywords as $keyword) {
+                                    $keyword->setIsNeedParse(0);
+                                    $this->entityManager->merge($keyword);
+                                }
+                                $this->entityManager->flush();
+
+                                $listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();
                             }
-                            $this->entityManager->flush();
 
-                            /** @var ParserService $parserService */
-                            $parserService = $this->serviceManager->get(ParserService::class);
-
-                            $parserService->parse('stagem-keyword-list-matching-product-parse');
-
-                            /** @var Keyword $keyword */
-                            foreach ($keywords as $keyword) {
-                                $keyword->setIsNeedParse(0);
-                                $this->entityManager->merge($keyword);
-                            }
-                            $this->entityManager->flush();
-
-                            return $keywords;
+                            return $listMatchingProducts;
                         },
                     ],
                 ],
