@@ -35,6 +35,7 @@ use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
+use Stagem\Keyword\Model\AsinIgnore;
 use Stagem\Keyword\Model\Keyword;
 use Stagem\Keyword\Model\ListMatchingProduct;
 use Stagem\Notification\Model\Notification;
@@ -1135,6 +1136,170 @@ class IndexAction extends AbstractAction
                             return $listMatchingProducts;
                         },
                     ],
+
+                    'sendToList' => [
+                        'type' => Type::listOf($this->types->getOutput(Product::class)),
+                        'args' => [
+                            'productData' => Type::listOf(Type::nonNull(Type::string()))
+                        ],
+                        'resolve' => function($root, $args) {
+                            $products = [];
+                            $data = $args['productData'];
+
+                            foreach ($data as $item) {
+                                $parsedItem = json_decode($item, true);
+
+                                /** @var Marketplace $itemMarketplace */
+                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
+
+                                /** @var Product $isProduct */
+                                $isProduct = $this->entityManager->getRepository(Product::class)
+                                    ->getProductByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
+                                    ->getQuery()->getOneOrNullResult();
+
+                                if ($isProduct) {
+                                    $isProduct->setName($parsedItem['name']);
+                                    $isProduct->setBrand($parsedItem['brand']);
+                                    $isProduct->setManufacturer($parsedItem['manufacturer']);
+                                    $isProduct->setPublisher($parsedItem['publisher']);
+                                    $isProduct->setStudio($parsedItem['studio']);
+                                    $isProduct->setTitle($parsedItem['title']);
+                                    $isProduct->setSmallImage($parsedItem['smallImage']);
+
+                                    $this->entityManager->merge($isProduct);
+
+                                    $products[] = $isProduct;
+                                } else {
+                                    $newProduct = new Product();
+                                    $newProduct->setAsin($parsedItem['asin']);
+                                    $newProduct->setName($parsedItem['name']);
+                                    $newProduct->setIsOriginal(0);
+                                    $newProduct->setPosition(10);
+                                    $newProduct->setIsActive(1);
+                                    $newProduct->setBrand($parsedItem['brand']);
+                                    $newProduct->setManufacturer($parsedItem['manufacturer']);
+                                    $newProduct->setPublisher($parsedItem['publisher']);
+                                    $newProduct->setStudio($parsedItem['studio']);
+                                    $newProduct->setTitle($parsedItem['title']);
+                                    $newProduct->setSmallImage($parsedItem['smallImage']);
+                                    $newProduct->setMarketplaces([$itemMarketplace]);
+
+                                    $this->entityManager->persist($newProduct);
+
+                                    $products[] = $newProduct;
+                                }
+
+                                /** @var ListMatchingProduct $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->findOneBy(['id' => $parsedItem['id']]);
+
+                                $listMatchingProduct->setAction("пропуск_асин_конкурент");
+                                $this->entityManager->merge($listMatchingProduct);
+                            }
+                            $this->entityManager->flush();
+
+                            return $products;
+                        }
+                    ],
+
+                    'sendToIgnore' => [
+                        'type' => Type::listOf($this->types->getOutput(AsinIgnore::class)),
+                        'args' => [
+                            'asinIgnoreData' => Type::listOf(Type::nonNull(Type::string()))
+                        ],
+                        'resolve' => function($root, $args) {
+                            $ignoredAsins = [];
+                            $data = $args['asinIgnoreData'];
+
+                            foreach ($data as $item) {
+                                $parsedItem = json_decode($item, true);
+
+                                /** @var Marketplace $itemMarketplace */
+                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
+
+                                /** @var AsinIgnore $isIgnored */
+                                $isIgnored = $this->entityManager->getRepository(AsinIgnore::class)
+                                    ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
+                                    ->getQuery()->getOneOrNullResult();
+
+                                if ($isIgnored) {
+                                    $isIgnored->setTitle($parsedItem['title']);
+                                    $isIgnored->setAsinOur($parsedItem['asinOur']);
+                                    $isIgnored->setImageUrl($parsedItem['imageUrl']);
+                                    $isIgnored->setAddedAt(new \DateTime());
+
+                                    $this->entityManager->merge($isIgnored);
+
+                                    $ignoredAsins[] = $isIgnored;
+                                } else {
+                                    $newAsinIgnore = new AsinIgnore();
+                                    $newAsinIgnore->setAsin($parsedItem['asin']);
+                                    $newAsinIgnore->setTitle($parsedItem['title']);
+                                    $newAsinIgnore->setAsinOur($parsedItem['asinOur']);
+                                    $newAsinIgnore->setImageUrl($parsedItem['imageUrl']);
+                                    $newAsinIgnore->setAddedAt(new \DateTime());
+                                    $newAsinIgnore->setMarketplace($itemMarketplace);
+
+                                    $this->entityManager->persist($newAsinIgnore);
+
+                                    $ignoredAsins[] = $newAsinIgnore;
+                                }
+
+                                /** @var ListMatchingProduct $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->findOneBy(['id' => $parsedItem['id']]);
+
+                                $listMatchingProduct->setAction("пропуск_асин_в_игноре");
+                                $this->entityManager->merge($listMatchingProduct);
+                            }
+                            $this->entityManager->flush();
+
+                            return $ignoredAsins;
+                        }
+                    ],
+
+                    'keywordMatchingAction' => [
+                        'type' => Type::listOf($this->types->getOutput(ListMatchingProduct::class)),
+                        'args' => [
+                            'keywordMatchingData' => Type::listOf(Type::nonNull(Type::string()))
+                        ],
+                        'resolve' => function($root, $args) {
+                            $keywordMatchingProducts = [];
+                            $data = $args['keywordMatchingData'];
+
+                            foreach ($data as $item) {
+                                $parsedItem = json_decode($item, true);
+
+                                /** @var Marketplace $itemMarketplace */
+                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
+
+                                /** @var ListMatchingProduct $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->findOneBy(['id' => $parsedItem['id']]);
+
+                                if (strlen(trim($listMatchingProduct->getAction())) == 0) {
+                                    if ($parsedItem['asin'] == $parsedItem['asinOur'] &&
+                                        $parsedItem['marketplace'] == $itemMarketplace->getId()) {
+                                        $listMatchingProduct->setAction("пропуск_асин_есть_в_этой_таблице");
+                                        $this->entityManager->merge($listMatchingProduct);
+                                    } elseif ($parsedItem['asin'] == $parsedItem['asinOur']) {
+                                        $listMatchingProduct->setAction("пропуск_асин_наш");
+                                        $this->entityManager->merge($listMatchingProduct);
+                                    } else {
+                                        $listMatchingProduct->setAction("решить что делать с товаром");
+                                        $this->entityManager->merge($listMatchingProduct);
+                                    }
+                                }
+                                $keywordMatchingProducts[] = $listMatchingProduct;
+                            }
+                            $this->entityManager->flush();
+
+                            return $keywordMatchingProducts;
+                        }
+                    ]
                 ],
             ]);
 
