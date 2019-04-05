@@ -1100,11 +1100,13 @@ class IndexAction extends AbstractAction
                         'type' => Type::listOf($this->types->getOutput(ListMatchingProduct::class)),
                         'args' => [
                             'keywords' => Type::listOf(Type::nonNull(Type::string())),
+                            'asinOur' => Type::nonNull(Type::string()),
                         ],
                         'resolve' => function ($root, $args) {
                             $listMatchingProducts = [];
 
                             $keywords = $this->entityManager->getRepository(Keyword::class)->findBy(['keyword' => $args['keywords']]);
+                            $asinOur = $args['asinOur'];
 
                             if (!empty($keywords)) {
                                 /** @var Keyword $keyword */
@@ -1124,12 +1126,18 @@ class IndexAction extends AbstractAction
                                 /** @var Keyword $keyword */
                                 foreach ($keywords as $keyword) {
                                     $keyword->setIsNeedParse(0);
+                                    //$keyword->setMarketplace($keyword->getMarketplace()->getId());
                                     $this->entityManager->merge($keyword);
                                 }
                                 $this->entityManager->flush();
 
-                                $listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
-                                    ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();
+                                /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                    ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
+                                //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
+                                $listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)->findBy([
+                                    'keyword' => $args['keywords'],
+                                    'asinOur' => $asinOur
+                                ]);
                             }
 
                             return $listMatchingProducts;
