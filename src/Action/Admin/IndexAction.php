@@ -1242,17 +1242,17 @@ class IndexAction extends AbstractAction
 
                                     $ignoredAsins[] = $isIgnored;
                                 } else {
-                                    $newAsinIgnore = new ProductIgnore();
-                                    $newAsinIgnore->setAsin($parsedItem['asin']);
-                                    $newAsinIgnore->setTitle($parsedItem['title']);
-                                    $newAsinIgnore->setAsinOur($parsedItem['asinOur']);
-                                    $newAsinIgnore->setImageUrl($parsedItem['imageUrl']);
-                                    $newAsinIgnore->setAddedAt(new \DateTime());
-                                    $newAsinIgnore->setMarketplace($itemMarketplace);
+                                    $newProductIgnore = new ProductIgnore();
+                                    $newProductIgnore->setAsin($parsedItem['asin']);
+                                    $newProductIgnore->setTitle($parsedItem['title']);
+                                    $newProductIgnore->setAsinOur($parsedItem['asinOur']);
+                                    $newProductIgnore->setImageUrl($parsedItem['imageUrl']);
+                                    $newProductIgnore->setAddedAt(new \DateTime());
+                                    $newProductIgnore->setMarketplace($itemMarketplace);
 
-                                    $this->entityManager->persist($newAsinIgnore);
+                                    $this->entityManager->persist($newProductIgnore);
 
-                                    $ignoredAsins[] = $newAsinIgnore;
+                                    $ignoredAsins[] = $newProductIgnore;
                                 }
 
                                 /** @var ProductMatching $listMatchingProduct */
