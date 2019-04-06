@@ -35,7 +35,7 @@ use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
-use Stagem\Keyword\Model\AsinIgnore;
+use Stagem\Keyword\Model\ProductIgnore;
 use Stagem\Keyword\Model\Keyword;
 use Stagem\Keyword\Model\ListMatchingProduct;
 use Stagem\Notification\Model\Notification;
@@ -1212,7 +1212,7 @@ class IndexAction extends AbstractAction
                     ],
 
                     'sendToIgnore' => [
-                        'type' => Type::listOf($this->types->getOutput(AsinIgnore::class)),
+                        'type' => Type::listOf($this->types->getOutput(ProductIgnore::class)),
                         'args' => [
                             'asinIgnoreData' => Type::listOf(Type::nonNull(Type::string()))
                         ],
@@ -1227,8 +1227,8 @@ class IndexAction extends AbstractAction
                                 $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
                                     ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
 
-                                /** @var AsinIgnore $isIgnored */
-                                $isIgnored = $this->entityManager->getRepository(AsinIgnore::class)
+                                /** @var ProductIgnore $isIgnored */
+                                $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
                                     ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
                                     ->getQuery()->getOneOrNullResult();
 
@@ -1242,17 +1242,17 @@ class IndexAction extends AbstractAction
 
                                     $ignoredAsins[] = $isIgnored;
                                 } else {
-                                    $newAsinIgnore = new AsinIgnore();
-                                    $newAsinIgnore->setAsin($parsedItem['asin']);
-                                    $newAsinIgnore->setTitle($parsedItem['title']);
-                                    $newAsinIgnore->setAsinOur($parsedItem['asinOur']);
-                                    $newAsinIgnore->setImageUrl($parsedItem['imageUrl']);
-                                    $newAsinIgnore->setAddedAt(new \DateTime());
-                                    $newAsinIgnore->setMarketplace($itemMarketplace);
+                                    $newProductIgnore = new ProductIgnore();
+                                    $newProductIgnore->setAsin($parsedItem['asin']);
+                                    $newProductIgnore->setTitle($parsedItem['title']);
+                                    $newProductIgnore->setAsinOur($parsedItem['asinOur']);
+                                    $newProductIgnore->setImageUrl($parsedItem['imageUrl']);
+                                    $newProductIgnore->setAddedAt(new \DateTime());
+                                    $newProductIgnore->setMarketplace($itemMarketplace);
 
-                                    $this->entityManager->persist($newAsinIgnore);
+                                    $this->entityManager->persist($newProductIgnore);
 
-                                    $ignoredAsins[] = $newAsinIgnore;
+                                    $ignoredAsins[] = $newProductIgnore;
                                 }
 
                                 /** @var ListMatchingProduct $listMatchingProduct */
