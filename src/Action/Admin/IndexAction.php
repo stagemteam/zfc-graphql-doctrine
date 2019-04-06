@@ -35,9 +35,9 @@ use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\TimeType;
-use Stagem\Keyword\Model\AsinIgnore;
+use Stagem\Keyword\Model\ProductIgnore;
 use Stagem\Keyword\Model\Keyword;
-use Stagem\Keyword\Model\ListMatchingProduct;
+use Stagem\Keyword\Model\ProductMatching;
 use Stagem\Notification\Model\Notification;
 use Stagem\Order\Model\MarketOrder;
 use Stagem\Order\Model\OrderSummary;
@@ -1098,7 +1098,7 @@ class IndexAction extends AbstractAction
                     ],
 
                     'listMatchingProduct' => [
-                        'type' => Type::listOf($this->types->getOutput(ListMatchingProduct::class)),
+                        'type' => Type::listOf($this->types->getOutput(ProductMatching::class)),
                         'args' => [
                             'keywords' => Type::listOf(Type::nonNull(Type::string())),
                             'asinOur' => Type::nonNull(Type::string()),
@@ -1117,12 +1117,12 @@ class IndexAction extends AbstractAction
                                 }
                                 $this->entityManager->flush();
 
-                                $lastListMatchingProductId = $this->entityManager->getRepository(ListMatchingProduct::class)
-                                    ->getLastInserted()->getQuery()->getSingleScalarResult();
+                                //$lastListMatchingProductId = $this->entityManager->getRepository(ProductsMatching::class)
+                                //    ->getLastInserted()->getQuery()->getSingleScalarResult();
 
                                 /** @var ParserService $parserService */
                                 $parserService = $this->serviceManager->get(ParserService::class);
-                                $parserService->parse('stagem-keyword-list-matching-product-parse');
+                                $parserService->parse('stagem-keyword-product-matching-parse');
 
                                 /** @var Keyword $keyword */
                                 foreach ($keywords as $keyword) {
@@ -1135,7 +1135,7 @@ class IndexAction extends AbstractAction
                                 /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
                                     ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
                                 //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
-                                $listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)->findBy([
+                                $listMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)->findBy([
                                     'keyword' => $args['keywords'],
                                     'asinOur' => $asinOur
                                 ]);
@@ -1198,8 +1198,8 @@ class IndexAction extends AbstractAction
                                     $products[] = $newProduct;
                                 }
 
-                                /** @var ListMatchingProduct $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                /** @var ProductMatching $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
                                 $listMatchingProduct->setAction("пропуск_асин_конкурент");
@@ -1212,7 +1212,7 @@ class IndexAction extends AbstractAction
                     ],
 
                     'sendToIgnore' => [
-                        'type' => Type::listOf($this->types->getOutput(AsinIgnore::class)),
+                        'type' => Type::listOf($this->types->getOutput(ProductIgnore::class)),
                         'args' => [
                             'asinIgnoreData' => Type::listOf(Type::nonNull(Type::string()))
                         ],
@@ -1227,8 +1227,8 @@ class IndexAction extends AbstractAction
                                 $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
                                     ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
 
-                                /** @var AsinIgnore $isIgnored */
-                                $isIgnored = $this->entityManager->getRepository(AsinIgnore::class)
+                                /** @var ProductIgnore $isIgnored */
+                                $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
                                     ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
                                     ->getQuery()->getOneOrNullResult();
 
@@ -1242,7 +1242,7 @@ class IndexAction extends AbstractAction
 
                                     $ignoredAsins[] = $isIgnored;
                                 } else {
-                                    $newAsinIgnore = new AsinIgnore();
+                                    $newAsinIgnore = new ProductIgnore();
                                     $newAsinIgnore->setAsin($parsedItem['asin']);
                                     $newAsinIgnore->setTitle($parsedItem['title']);
                                     $newAsinIgnore->setAsinOur($parsedItem['asinOur']);
@@ -1255,8 +1255,8 @@ class IndexAction extends AbstractAction
                                     $ignoredAsins[] = $newAsinIgnore;
                                 }
 
-                                /** @var ListMatchingProduct $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                /** @var ProductMatching $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
                                 $listMatchingProduct->setAction("пропуск_асин_в_игноре");
@@ -1269,7 +1269,7 @@ class IndexAction extends AbstractAction
                     ],
 
                     'keywordMatchingAction' => [
-                        'type' => Type::listOf($this->types->getOutput(ListMatchingProduct::class)),
+                        'type' => Type::listOf($this->types->getOutput(ProductMatching::class)),
                         'args' => [
                             'keywordMatchingData' => Type::listOf(Type::nonNull(Type::string()))
                         ],
@@ -1284,8 +1284,8 @@ class IndexAction extends AbstractAction
                                 $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
                                     ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
 
-                                /** @var ListMatchingProduct $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                /** @var ProductMatching $listMatchingProduct */
+                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
                                 if (strlen(trim($listMatchingProduct->getAction())) == 0) {
