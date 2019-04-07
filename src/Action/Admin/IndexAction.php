@@ -1136,7 +1136,7 @@ class IndexAction extends AbstractAction
                                     ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
                                 //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
                                 $listMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)->findBy([
-                                    'keyword' => $args['keywords'],
+                                    'keyword' => $keywords,
                                     'asinOur' => $asinOur
                                 ]);
                             }
