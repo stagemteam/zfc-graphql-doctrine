@@ -1157,55 +1157,57 @@ class IndexAction extends AbstractAction
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
 
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var Product $product */
-                                $product = $this->entityManager->getRepository(Product::class)->findOneBy(['asin' => $parsedItem['asin']]);
-
-                                if ($product) {
-                                    if (!$product->inMarketplace($itemMarketplace)) {
-                                        $product->addMarketplace($itemMarketplace);
-                                    }
-
-                                    $product->setName($parsedItem['name']);
-                                    $product->setBrand($parsedItem['brand']);
-                                    $product->setManufacturer($parsedItem['manufacturer']);
-                                    $product->setPublisher($parsedItem['publisher']);
-                                    $product->setStudio($parsedItem['studio']);
-                                    $product->setTitle($parsedItem['title']);
-                                    $product->setSmallImage($parsedItem['smallImage']);
-
-                                    $this->entityManager->merge($product);
-
-                                    $products[] = $product;
-                                } else {
-                                    $newProduct = new Product();
-                                    $newProduct->setAsin($parsedItem['asin']);
-                                    $newProduct->setName($parsedItem['name']);
-                                    $newProduct->setIsOriginal(0);
-                                    $newProduct->setPosition(10);
-                                    $newProduct->setIsActive(1);
-                                    $newProduct->setBrand($parsedItem['brand']);
-                                    $newProduct->setManufacturer($parsedItem['manufacturer']);
-                                    $newProduct->setPublisher($parsedItem['publisher']);
-                                    $newProduct->setStudio($parsedItem['studio']);
-                                    $newProduct->setTitle($parsedItem['title']);
-                                    $newProduct->setSmallImage($parsedItem['smallImage']);
-                                    $newProduct->addMarketplace($itemMarketplace);
-
-                                    $this->entityManager->persist($newProduct);
-
-                                    $products[] = $newProduct;
-                                }
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                /** @var ProductMatching $productMatching */
+                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
-                                $listMatchingProduct->setAction("пропуск_асин_конкурент");
-                                $this->entityManager->merge($listMatchingProduct);
+                                if (isset($productMatching)) {
+                                    /** @var Marketplace $itemMarketplace */
+                                    $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                        ->findOneBy(['code' => $productMatching->getMarketplaceCode()]);
+
+                                    /** @var Product $product */
+                                    $product = $this->entityManager->getRepository(Product::class)
+                                        ->findOneBy(['asin' => $productMatching->getAsin()]);
+
+                                    if ($product) {
+                                        if (!$product->inMarketplace($itemMarketplace)) {
+                                            $product->addMarketplace($itemMarketplace);
+                                        }
+                                        $product->setName($productMatching->getName());
+                                        $product->setBrand($productMatching->getBrand());
+                                        $product->setManufacturer($productMatching->getManufacturer());
+                                        $product->setPublisher($productMatching->getPublisher());
+                                        $product->setStudio($productMatching->getStudio());
+                                        $product->setTitle($productMatching->getTitle());
+                                        $product->setSmallImage($productMatching->getSmallImageUrl());
+                                        $this->entityManager->merge($product);
+                                        $products[] = $product;
+                                    } else {
+                                        $newProduct = new Product();
+                                        $newProduct->setAsin($productMatching->getAsin());
+                                        $newProduct->setName($productMatching->getName());
+                                        $newProduct->setIsOriginal(0);
+                                        $newProduct->setPosition(10);
+                                        $newProduct->setIsActive(1);
+                                        $newProduct->setBrand($productMatching->getBrand());
+                                        $newProduct->setManufacturer($productMatching->getManufacturer());
+                                        $newProduct->setPublisher($productMatching->getPublisher());
+                                        $newProduct->setStudio($productMatching->getStudio());
+                                        $newProduct->setTitle($productMatching->getTitle());
+                                        $newProduct->setSmallImage($productMatching->getSmallImageUrl());
+                                        $newProduct->addMarketplace($itemMarketplace);
+                                        $this->entityManager->persist($newProduct);
+                                        $products[] = $newProduct;
+                                    }
+
+                                    /** @var ProductMatching $listMatchingProduct */
+                                    $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                        ->findOneBy(['id' => $parsedItem['id']]);
+
+                                    $listMatchingProduct->setAction("пропуск_асин_конкурент");
+                                    $this->entityManager->merge($listMatchingProduct);
+                                }
                             }
                             $this->entityManager->flush();
 
@@ -1225,44 +1227,42 @@ class IndexAction extends AbstractAction
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
 
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var ProductIgnore $isIgnored */
-                                $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
-                                    ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
-                                    ->getQuery()->getOneOrNullResult();
-
-                                if ($isIgnored) {
-                                    $isIgnored->setTitle($parsedItem['title']);
-                                    $isIgnored->setAsinOur($parsedItem['asinOur']);
-                                    $isIgnored->setImageUrl($parsedItem['imageUrl']);
-                                    $isIgnored->setAddedAt(new \DateTime());
-
-                                    $this->entityManager->merge($isIgnored);
-
-                                    $ignoredAsins[] = $isIgnored;
-                                } else {
-                                    $newProductIgnore = new ProductIgnore();
-                                    $newProductIgnore->setAsin($parsedItem['asin']);
-                                    $newProductIgnore->setTitle($parsedItem['title']);
-                                    $newProductIgnore->setAsinOur($parsedItem['asinOur']);
-                                    $newProductIgnore->setImageUrl($parsedItem['imageUrl']);
-                                    $newProductIgnore->setAddedAt(new \DateTime());
-                                    $newProductIgnore->setMarketplace($itemMarketplace);
-
-                                    $this->entityManager->persist($newProductIgnore);
-
-                                    $ignoredAsins[] = $newProductIgnore;
-                                }
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                /** @var ProductMatching $productMatching */
+                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
-                                $listMatchingProduct->setAction("пропуск_асин_в_игноре");
-                                $this->entityManager->merge($listMatchingProduct);
+                                if (isset($productMatching)) {
+                                    /** @var Marketplace $itemMarketplace */
+                                    $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                        ->findOneBy(['code' => $productMatching->getMarketplaceCode()]);
+
+                                    /** @var ProductIgnore $isIgnored */
+                                    $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
+                                        ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $productMatching->getAsin())
+                                        ->getQuery()->getOneOrNullResult();
+
+                                    if ($isIgnored) {
+                                        $isIgnored->setTitle($productMatching->getTitle());
+                                        $isIgnored->setAsinOur($productMatching->getAsinOur());
+                                        $isIgnored->setImageUrl($productMatching->getSmallImageUrl());
+                                        $isIgnored->setAddedAt(new \DateTime());
+                                        $this->entityManager->merge($isIgnored);
+                                        $ignoredAsins[] = $isIgnored;
+                                    } else {
+                                        $newProductIgnore = new ProductIgnore();
+                                        $newProductIgnore->setAsin($productMatching->getAsin());
+                                        $newProductIgnore->setTitle($productMatching->getTitle());
+                                        $newProductIgnore->setAsinOur($productMatching->getAsinOur());
+                                        $newProductIgnore->setImageUrl($productMatching->getSmallImageUrl());
+                                        $newProductIgnore->setAddedAt(new \DateTime());
+                                        $newProductIgnore->setMarketplace($itemMarketplace);
+                                        $this->entityManager->persist($newProductIgnore);
+                                        $ignoredAsins[] = $newProductIgnore;
+                                    }
+
+                                    $productMatching->setAction("пропуск_асин_в_игноре");
+                                    $this->entityManager->merge($productMatching);
+                                }
                             }
                             $this->entityManager->flush();
 
@@ -1282,28 +1282,26 @@ class IndexAction extends AbstractAction
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
 
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                /** @var ProductMatching $productMatching */
+                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
-                                if (strlen(trim($listMatchingProduct->getAction())) == 0) {
-                                    if ($parsedItem['asin'] == $parsedItem['asinOur'] &&
-                                        $parsedItem['marketplace'] == $itemMarketplace->getId()) {
-                                        $listMatchingProduct->setAction("пропуск_асин_есть_в_этой_таблице");
-                                        $this->entityManager->merge($listMatchingProduct);
-                                    } elseif ($parsedItem['asin'] == $parsedItem['asinOur']) {
-                                        $listMatchingProduct->setAction("пропуск_асин_наш");
-                                        $this->entityManager->merge($listMatchingProduct);
-                                    } else {
-                                        $listMatchingProduct->setAction("решить что делать с товаром");
-                                        $this->entityManager->merge($listMatchingProduct);
+                                if (isset($productMatching)) {
+                                    if (strlen(trim($productMatching->getAction())) == 0) {
+                                        if ($productMatching->getAsin() == $productMatching->getAsinOur()
+                                            && $productMatching->getMarketplace()->getCode() == $productMatching->getMarketplaceCode()) {
+                                            $productMatching->setAction("пропуск_асин_есть_в_этой_таблице");
+                                            $this->entityManager->merge($productMatching);
+                                        } elseif ($productMatching->getAsin() == $productMatching->getAsinOur()) {
+                                            $productMatching->setAction("пропуск_асин_наш");
+                                            $this->entityManager->merge($productMatching);
+                                        } else {
+                                            $productMatching->setAction("решить что делать с товаром");
+                                            $this->entityManager->merge($productMatching);
+                                        }
                                     }
+                                    $keywordMatchingProducts[] = $productMatching;
                                 }
-                                $keywordMatchingProducts[] = $listMatchingProduct;
                             }
                             $this->entityManager->flush();
 
