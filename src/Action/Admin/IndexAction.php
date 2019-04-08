@@ -1161,23 +1161,25 @@ class IndexAction extends AbstractAction
                                 $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
                                     ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
 
-                                /** @var Product $isProduct */
-                                $isProduct = $this->entityManager->getRepository(Product::class)
-                                    ->getProductByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
-                                    ->getQuery()->getOneOrNullResult();
+                                /** @var Product $product */
+                                $product = $this->entityManager->getRepository(Product::class)->findOneBy(['asin' => $parsedItem['asin']]);
 
-                                if ($isProduct) {
-                                    $isProduct->setName($parsedItem['name']);
-                                    $isProduct->setBrand($parsedItem['brand']);
-                                    $isProduct->setManufacturer($parsedItem['manufacturer']);
-                                    $isProduct->setPublisher($parsedItem['publisher']);
-                                    $isProduct->setStudio($parsedItem['studio']);
-                                    $isProduct->setTitle($parsedItem['title']);
-                                    $isProduct->setSmallImage($parsedItem['smallImage']);
+                                if ($product) {
+                                    if (!$product->inMarketplace($itemMarketplace)) {
+                                        $product->addMarketplace($itemMarketplace);
+                                    }
 
-                                    $this->entityManager->merge($isProduct);
+                                    $product->setName($parsedItem['name']);
+                                    $product->setBrand($parsedItem['brand']);
+                                    $product->setManufacturer($parsedItem['manufacturer']);
+                                    $product->setPublisher($parsedItem['publisher']);
+                                    $product->setStudio($parsedItem['studio']);
+                                    $product->setTitle($parsedItem['title']);
+                                    $product->setSmallImage($parsedItem['smallImage']);
 
-                                    $products[] = $isProduct;
+                                    $this->entityManager->merge($product);
+
+                                    $products[] = $product;
                                 } else {
                                     $newProduct = new Product();
                                     $newProduct->setAsin($parsedItem['asin']);
@@ -1191,7 +1193,7 @@ class IndexAction extends AbstractAction
                                     $newProduct->setStudio($parsedItem['studio']);
                                     $newProduct->setTitle($parsedItem['title']);
                                     $newProduct->setSmallImage($parsedItem['smallImage']);
-                                    $newProduct->setMarketplaces([$itemMarketplace]);
+                                    $newProduct->addMarketplace($itemMarketplace);
 
                                     $this->entityManager->persist($newProduct);
 
