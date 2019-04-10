@@ -1174,6 +1174,8 @@ class IndexAction extends AbstractAction
                                         if (!$product->inMarketplace($itemMarketplace)) {
                                             $product->addMarketplace($itemMarketplace);
                                         }
+
+                                        $product->setOriginalAsin($productMatching->getAsinOur());
                                         $product->setName($productMatching->getName());
                                         $product->setBrand($productMatching->getBrand());
                                         $product->setManufacturer($productMatching->getManufacturer());
@@ -1187,6 +1189,7 @@ class IndexAction extends AbstractAction
                                         $newProduct = new Product();
                                         $newProduct->setAsin($productMatching->getAsin());
                                         $newProduct->setName($productMatching->getName());
+                                        $newProduct->setOriginalAsin($productMatching->getAsinOur());
                                         $newProduct->setIsOriginal(0);
                                         $newProduct->setPosition(10);
                                         $newProduct->setIsActive(1);
