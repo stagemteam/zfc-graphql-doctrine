@@ -1208,7 +1208,8 @@ class IndexAction extends AbstractAction
                                     $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
                                         ->findOneBy(['id' => $parsedItem['id']]);
 
-                                    $listMatchingProduct->setAction("пропуск_асин_конкурент");
+                                    //$listMatchingProduct->setAction("пропуск_асин_конкурент");
+                                    $listMatchingProduct->setAction("2_skip_asin_competitor");
                                     $this->entityManager->merge($listMatchingProduct);
                                 }
                             }
@@ -1263,7 +1264,8 @@ class IndexAction extends AbstractAction
                                         $ignoredAsins[] = $newProductIgnore;
                                     }
 
-                                    $productMatching->setAction("пропуск_асин_в_игноре");
+                                    //$productMatching->setAction("пропуск_асин_в_игноре");
+                                    $productMatching->setAction("3_asin_in_ignore");
                                     $this->entityManager->merge($productMatching);
                                 }
                             }
@@ -1293,13 +1295,16 @@ class IndexAction extends AbstractAction
                                     if (strlen(trim($productMatching->getAction())) == 0) {
                                         if ($productMatching->getAsin() == $productMatching->getAsinOur()
                                             && $productMatching->getMarketplace()->getCode() == $productMatching->getMarketplaceCode()) {
-                                            $productMatching->setAction("пропуск_асин_есть_в_этой_таблице");
+                                            //$productMatching->setAction("пропуск_асин_есть_в_этой_таблице");
+                                            $productMatching->setAction("4_already_in_this_table");
                                             $this->entityManager->merge($productMatching);
                                         } elseif ($productMatching->getAsin() == $productMatching->getAsinOur()) {
-                                            $productMatching->setAction("пропуск_асин_наш");
+                                            //$productMatching->setAction("пропуск_асин_наш");
+                                            $productMatching->setAction("1_asin_our");
                                             $this->entityManager->merge($productMatching);
                                         } else {
-                                            $productMatching->setAction("решить что делать с товаром");
+                                            //$productMatching->setAction("решить что делать с товаром");
+                                            $productMatching->setAction("0_select_what_to_do");
                                             $this->entityManager->merge($productMatching);
                                         }
                                     }
