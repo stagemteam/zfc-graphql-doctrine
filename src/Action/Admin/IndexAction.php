@@ -1275,7 +1275,7 @@ class IndexAction extends AbstractAction
                         }
                     ],
 
-                    'keywordMatchingAction' => [
+                    'keywordMatchingClear' => [
                         'type' => Type::listOf($this->types->getOutput(ProductMatching::class)),
                         'args' => [
                             'keywordMatchingData' => Type::listOf(Type::nonNull(Type::string()))
@@ -1292,21 +1292,10 @@ class IndexAction extends AbstractAction
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
                                 if (isset($productMatching)) {
-                                    if (strlen(trim($productMatching->getAction())) == 0) {
-                                        if ($productMatching->getAsin() == $productMatching->getAsinOur()
-                                            && $productMatching->getMarketplace()->getCode() == $productMatching->getMarketplaceCode()) {
-                                            //$productMatching->setAction("пропуск_асин_есть_в_этой_таблице");
-                                            $productMatching->setAction("4_already_in_this_table");
-                                            $this->entityManager->merge($productMatching);
-                                        } elseif ($productMatching->getAsin() == $productMatching->getAsinOur()) {
-                                            //$productMatching->setAction("пропуск_асин_наш");
-                                            $productMatching->setAction("1_asin_our");
-                                            $this->entityManager->merge($productMatching);
-                                        } else {
-                                            //$productMatching->setAction("решить что делать с товаром");
-                                            $productMatching->setAction("0_select_what_to_do");
-                                            $this->entityManager->merge($productMatching);
-                                        }
+                                    if (strlen(trim($productMatching->getAction())) == 0
+                                        || $productMatching->getAction() != "0_select_what_to_do"
+                                    ){
+                                        $this->entityManager->remove($productMatching);
                                     }
                                     $keywordMatchingProducts[] = $productMatching;
                                 }
