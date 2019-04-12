@@ -1208,7 +1208,6 @@ class IndexAction extends AbstractAction
                                     $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
                                         ->findOneBy(['id' => $parsedItem['id']]);
 
-                                    //$listMatchingProduct->setAction("пропуск_асин_конкурент");
                                     $listMatchingProduct->setAction("2_skip_asin_competitor");
                                     $this->entityManager->merge($listMatchingProduct);
                                 }
@@ -1264,7 +1263,6 @@ class IndexAction extends AbstractAction
                                         $ignoredAsins[] = $newProductIgnore;
                                     }
 
-                                    //$productMatching->setAction("пропуск_асин_в_игноре");
                                     $productMatching->setAction("3_asin_in_ignore");
                                     $this->entityManager->merge($productMatching);
                                 }
@@ -1281,23 +1279,15 @@ class IndexAction extends AbstractAction
                             'keywordMatchingData' => Type::listOf(Type::nonNull(Type::string()))
                         ],
                         'resolve' => function($root, $args) {
-                            $keywordMatchingProducts = [];
-                            $data = $args['keywordMatchingData'];
+                            $keywordMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)
+                                ->getAllMatchingProducts($this->pool()->current())
+                                ->getQuery()->getResult();
 
-                            foreach ($data as $item) {
-                                $parsedItem = json_decode($item, true);
-
-                                /** @var ProductMatching $productMatching */
-                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
-                                    ->findOneBy(['id' => $parsedItem['id']]);
-
-                                if (isset($productMatching)) {
-                                    if (strlen(trim($productMatching->getAction())) == 0
-                                        || $productMatching->getAction() != "0_select_what_to_do"
-                                    ){
-                                        $this->entityManager->remove($productMatching);
-                                    }
-                                    $keywordMatchingProducts[] = $productMatching;
+                            foreach ($keywordMatchingProducts as $index => $keywordMatchingProduct) {
+                                if (strlen(trim($keywordMatchingProduct->getAction())) != 0
+                                    && $keywordMatchingProduct->getAction() != "0_select_what_to_do") {
+                                    $this->entityManager->remove($keywordMatchingProduct);
+                                    unset($keywordMatchingProducts[$index]);
                                 }
                             }
                             $this->entityManager->flush();
