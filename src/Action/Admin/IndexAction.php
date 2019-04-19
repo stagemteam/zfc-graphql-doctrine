@@ -48,6 +48,7 @@ use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
+use Stagem\Report\Model\ReportCategory;
 use Stagem\Review\Model\Review;
 use Stagem\Review\Service\ReviewService;
 use Stagem\ReviewPlan\Model\ReviewPlan;
@@ -628,6 +629,27 @@ class IndexAction extends AbstractAction
 
                             $qb = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
+                            $result = $qb->getQuery()->getResult();
+
+                            return $result;
+                        },
+                    ],
+
+                    'reportCategory' => [
+                        'type' => Type::listOf($this->types->getOutput(ReportCategory::class)),
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(ReportCategory::class),
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(ReportCategory::class),
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $qb = $this->types->createFilteredQueryBuilder(ReportCategory::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            
                             $result = $qb->getQuery()->getResult();
 
                             return $result;
