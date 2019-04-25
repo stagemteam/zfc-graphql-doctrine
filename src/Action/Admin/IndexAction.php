@@ -1167,6 +1167,8 @@ class IndexAction extends AbstractAction
                                         $keyword->setIsNeedParse(0);
                                         $this->entityManager->merge($keyword);
                                     }
+
+                                    $this->entityManager->flush();
                                 }
                             }
 
