@@ -16,6 +16,7 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use Exception;
 use function Functional\push;
 use Popov\ZfcEntity\Model\Entity;
 use Popov\ZfcRole\Model\Role;
@@ -1142,25 +1143,33 @@ class IndexAction extends AbstractAction
                                 //$lastListMatchingProductId = $this->entityManager->getRepository(ProductsMatching::class)
                                 //    ->getLastInserted()->getQuery()->getSingleScalarResult();
 
-                                /** @var ParserService $parserService */
-                                $parserService = $this->serviceManager->get(ParserService::class);
-                                $parserService->parse('stagem-keyword-product-matching-parse');
+                                try {
+                                    /** @var ParserService $parserService */
+                                    $parserService = $this->serviceManager->get(ParserService::class);
+                                    $parserService->parse('stagem-keyword-product-matching-parse');
+                                    /** @var Keyword $keyword */
+                                    foreach ($keywords as $keyword) {
+                                        $keyword->setIsNeedParse(0);
+                                        //$keyword->setMarketplace($keyword->getMarketplace()->getId());
+                                        $this->entityManager->merge($keyword);
+                                    }
+                                    $this->entityManager->flush();
+                                    /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                        ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
+                                    //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
+                                    $listMatchingProducts =
+                                        $this->entityManager->getRepository(ProductMatching::class)->findBy([
+                                            'keyword' => $keywords,
+                                            'asinOur' => $asinOur
+                                        ]);
+                                } catch (Exception $exception) {
+                                    foreach ($keywords as $keyword) {
+                                        $keyword->setIsNeedParse(0);
+                                        $this->entityManager->merge($keyword);
+                                    }
 
-                                /** @var Keyword $keyword */
-                                foreach ($keywords as $keyword) {
-                                    $keyword->setIsNeedParse(0);
-                                    //$keyword->setMarketplace($keyword->getMarketplace()->getId());
-                                    $this->entityManager->merge($keyword);
+                                    $this->entityManager->flush();
                                 }
-                                $this->entityManager->flush();
-
-                                /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
-                                    ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
-                                //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
-                                $listMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)->findBy([
-                                    'keyword' => $keywords,
-                                    'asinOur' => $asinOur
-                                ]);
                             }
 
                             return $listMatchingProducts;
