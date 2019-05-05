@@ -49,7 +49,6 @@ use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
-use Stagem\Report\Model\ReportCategory;
 use Stagem\Report\Model\ReportType;
 use Stagem\Review\Model\Review;
 use Stagem\Review\Service\ReviewService;
