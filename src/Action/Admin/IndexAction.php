@@ -636,7 +636,7 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'reportType' => [
+                    /*'reportType' => [
                         'type' => Type::listOf($this->types->getOutput(ReportType::class)),
                         'args' => [
                             [
@@ -655,7 +655,7 @@ class IndexAction extends AbstractAction
 
                             return $result;
                         },
-                    ],
+		  ]*/
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
@@ -1367,8 +1367,9 @@ class IndexAction extends AbstractAction
             #return new JsonResponse();
 
 
-        } catch (\Exception $e) {
-            StandardServer::send500Error($e);
+	} catch (\Exception $e) {
+		var_dump($e->getMessage());    
+		StandardServer::send500Error($e);
         }
 
         return new EmptyResponse(200);
