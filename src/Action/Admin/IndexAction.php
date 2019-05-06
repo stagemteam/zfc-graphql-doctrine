@@ -788,6 +788,7 @@ class IndexAction extends AbstractAction
                         'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
                         'args' => [
                             'name' => Type::nonNull(Type::string()),
+                            'type' => Type::nonNull(Type::string()),
                             'isActive' => Type::nonNull(Type::int()),
                             'isBad' => Type::nonNull(Type::int()),
                             'when' => Type::nonNull(Type::string()),
@@ -805,6 +806,7 @@ class IndexAction extends AbstractAction
 
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
+                            $configuratorJob->setType($args['type']);
                             $configuratorJob->setIsActive($args['isActive']);
                             $configuratorJob->setIsBad($args['isBad']);
                             $configuratorJob->setWhenTime($args['when']);
@@ -812,7 +814,11 @@ class IndexAction extends AbstractAction
                                 $configuratorJob->setDayOfWhen($args['day']);
                             }
                             $configuratorJob->setTimeToRun($args['time'] ? \DateTime::createFromFormat("H:i", $args['time']) : null);
-                            $configuratorJob->setOptions(json_decode($args['options'], true));
+                            if (strlen($args['options']) > 0) {
+                                $configuratorJob->setOptions(json_decode($args['options'], true));
+                            } else {
+                                $configuratorJob->setOptions([]);
+                            }
                             $configuratorJob->setEntity($entity);
                             $configuratorJob->setPool($pool);
                             $configuratorJob->setAlgorithm($configuratorAlgorithm);
@@ -827,6 +833,7 @@ class IndexAction extends AbstractAction
                         'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
                         'args' => [
                             'id' => Type::id(),
+                            'type' => Type::string(),
                             'name' => Type::string(),
                             'isActive' => Type::int(),
                             'isBad' => Type::int(),
