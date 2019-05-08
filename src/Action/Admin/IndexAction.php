@@ -715,8 +715,11 @@ class IndexAction extends AbstractAction
 
                             $method = explode('::', $algorithm->getCallback());
                             $entity = $this->serviceManager->get($method[0]);
+                            $result = call_user_func_array([$entity, $method[1]], [$job, null]);
 
-                            return call_user_func_array([$entity, $method[1]], [$job, null]);
+                            $this->entityManager->flush();
+
+                            return $result;
                         },
                     ],
 
