@@ -935,6 +935,7 @@ class IndexAction extends AbstractAction
                             foreach ($args['orders'] as $key => $order) {
                                 $args['orders'][$key] = trim($order);
                             }
+
                             $orders = $this->entityManager->getRepository(MarketOrder::class)->findBy(['code' => $args['orders']]);
                             //$ordersSummary =
 
@@ -944,21 +945,21 @@ class IndexAction extends AbstractAction
 
                             foreach ($orders as $order) {
                                 $order->setIsTest(true);
-                                $this->entityManager->merge($order);
+                                //$this->entityManager->merge($order);
                                 $orderPurchaseAt = (clone $order->getPurchaseAt())->setTime(0,0);
                                 if(!isset($orderSummaryRows[$orderPurchaseAt->format('Y-m-d')])){
                                     //$dates[$orderPurchaseAt->format('Y-m-d')] = $orderPurchaseAt->setTime(0,0);
                                     $fromRepository = $this->entityManager->getRepository(OrderSummary::class)
-                                        ->findBy([
+                                        ->findOneBy([
                                             'marketplace' => $marketplace,
                                             'date' => $orderPurchaseAt,
                                         ]);
-                                    $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] =
-                                        array_pop($fromRepository);
+                                    if ($fromRepository) {
+                                        $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] = $fromRepository;
+                                    }
                                 }
                             }
                             $this->entityManager->flush();
-
 
 
                             $orderSummaryService = $this->container->get(OrderSummaryService::class);
@@ -966,9 +967,6 @@ class IndexAction extends AbstractAction
 
                             $orderSummaryRows = $summaryParser->processCertainDates($orderSummaryRows, $marketplace);
 
-                            foreach ($orderSummaryRows as $summaryRow){
-                                $this->entityManager->merge($summaryRow);
-                            }
                             $this->entityManager->flush(); //updated orderSummary table
 
                             return $orders;
