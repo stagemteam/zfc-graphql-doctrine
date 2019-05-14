@@ -16,6 +16,7 @@
 namespace Stagem\ZfcGraphQL\Action\Admin;
 
 use Doctrine\ORM\EntityManager;
+use Exception;
 use function Functional\push;
 use Popov\ZfcEntity\Model\Entity;
 use Popov\ZfcRole\Model\Role;
@@ -48,6 +49,7 @@ use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
+use Stagem\Report\Model\ReportType;
 use Stagem\Review\Model\Review;
 use Stagem\Review\Service\ReviewService;
 use Stagem\ReviewPlan\Model\ReviewPlan;
@@ -633,6 +635,27 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
+
+                    /*'reportType' => [
+                        'type' => Type::listOf($this->types->getOutput(ReportType::class)),
+                        'args' => [
+                            [
+                                'name' => 'filter',
+                                'type' => $this->types->getFilter(ReportType::class),
+                            ],
+                            [
+                                'name' => 'sorting',
+                                'type' => $this->types->getSorting(ReportType::class),
+                            ],
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $qb = $this->types->createFilteredQueryBuilder(ReportType::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+                            
+                            $result = $qb->getQuery()->getResult();
+
+                            return $result;
+                        },
+		  ]*/
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
@@ -692,8 +715,11 @@ class IndexAction extends AbstractAction
 
                             $method = explode('::', $algorithm->getCallback());
                             $entity = $this->serviceManager->get($method[0]);
+                            $result = call_user_func_array([$entity, $method[1]], [$job, null]);
 
-                            return call_user_func_array([$entity, $method[1]], [$job, null]);
+                            $this->entityManager->flush();
+
+                            return $result;
                         },
                     ],
 
@@ -765,6 +791,7 @@ class IndexAction extends AbstractAction
                         'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
                         'args' => [
                             'name' => Type::nonNull(Type::string()),
+                            'type' => Type::nonNull(Type::string()),
                             'isActive' => Type::nonNull(Type::int()),
                             'isBad' => Type::nonNull(Type::int()),
                             'when' => Type::nonNull(Type::string()),
@@ -782,6 +809,7 @@ class IndexAction extends AbstractAction
 
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
+                            $configuratorJob->setType($args['type']);
                             $configuratorJob->setIsActive($args['isActive']);
                             $configuratorJob->setIsBad($args['isBad']);
                             $configuratorJob->setWhenTime($args['when']);
@@ -789,7 +817,11 @@ class IndexAction extends AbstractAction
                                 $configuratorJob->setDayOfWhen($args['day']);
                             }
                             $configuratorJob->setTimeToRun($args['time'] ? \DateTime::createFromFormat("H:i", $args['time']) : null);
-                            $configuratorJob->setOptions(json_decode($args['options'], true));
+                            if (strlen($args['options']) > 0) {
+                                $configuratorJob->setOptions(json_decode($args['options'], true));
+                            } else {
+                                $configuratorJob->setOptions([]);
+                            }
                             $configuratorJob->setEntity($entity);
                             $configuratorJob->setPool($pool);
                             $configuratorJob->setAlgorithm($configuratorAlgorithm);
@@ -804,6 +836,7 @@ class IndexAction extends AbstractAction
                         'type' => Type::nonNull($this->types->getOutput(ConfiguratorJob::class)),
                         'args' => [
                             'id' => Type::id(),
+                            'type' => Type::string(),
                             'name' => Type::string(),
                             'isActive' => Type::int(),
                             'isBad' => Type::int(),
@@ -1120,25 +1153,33 @@ class IndexAction extends AbstractAction
                                 //$lastListMatchingProductId = $this->entityManager->getRepository(ProductsMatching::class)
                                 //    ->getLastInserted()->getQuery()->getSingleScalarResult();
 
-                                /** @var ParserService $parserService */
-                                $parserService = $this->serviceManager->get(ParserService::class);
-                                $parserService->parse('stagem-keyword-product-matching-parse');
+                                try {
+                                    /** @var ParserService $parserService */
+                                    $parserService = $this->serviceManager->get(ParserService::class);
+                                    $parserService->parse('stagem-keyword-product-matching-parse');
+                                    /** @var Keyword $keyword */
+                                    foreach ($keywords as $keyword) {
+                                        $keyword->setIsNeedParse(0);
+                                        //$keyword->setMarketplace($keyword->getMarketplace()->getId());
+                                        $this->entityManager->merge($keyword);
+                                    }
+                                    $this->entityManager->flush();
+                                    /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
+                                        ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
+                                    //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
+                                    $listMatchingProducts =
+                                        $this->entityManager->getRepository(ProductMatching::class)->findBy([
+                                            'keyword' => $keywords,
+                                            'asinOur' => $asinOur
+                                        ]);
+                                } catch (Exception $exception) {
+                                    foreach ($keywords as $keyword) {
+                                        $keyword->setIsNeedParse(0);
+                                        $this->entityManager->merge($keyword);
+                                    }
 
-                                /** @var Keyword $keyword */
-                                foreach ($keywords as $keyword) {
-                                    $keyword->setIsNeedParse(0);
-                                    //$keyword->setMarketplace($keyword->getMarketplace()->getId());
-                                    $this->entityManager->merge($keyword);
+                                    $this->entityManager->flush();
                                 }
-                                $this->entityManager->flush();
-
-                                /*$listMatchingProducts = $this->entityManager->getRepository(ListMatchingProduct::class)
-                                    ->getMatchingProductsGreaterId($lastListMatchingProductId)->getQuery()->getResult();*/
-                                //$listMatchingProducts = $this->entityManager->getRepository(\Stagem\Keyword\Model\ListMatchingProduct::class)->findBy(['id'=>10]);
-                                $listMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)->findBy([
-                                    'keyword' => $keywords,
-                                    'asinOur' => $asinOur
-                                ]);
                             }
 
                             return $listMatchingProducts;
@@ -1157,53 +1198,60 @@ class IndexAction extends AbstractAction
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
 
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var Product $isProduct */
-                                $isProduct = $this->entityManager->getRepository(Product::class)
-                                    ->getProductByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
-                                    ->getQuery()->getOneOrNullResult();
-
-                                if ($isProduct) {
-                                    $isProduct->setName($parsedItem['name']);
-                                    $isProduct->setBrand($parsedItem['brand']);
-                                    $isProduct->setManufacturer($parsedItem['manufacturer']);
-                                    $isProduct->setPublisher($parsedItem['publisher']);
-                                    $isProduct->setStudio($parsedItem['studio']);
-                                    $isProduct->setTitle($parsedItem['title']);
-                                    $isProduct->setSmallImage($parsedItem['smallImage']);
-
-                                    $this->entityManager->merge($isProduct);
-
-                                    $products[] = $isProduct;
-                                } else {
-                                    $newProduct = new Product();
-                                    $newProduct->setAsin($parsedItem['asin']);
-                                    $newProduct->setName($parsedItem['name']);
-                                    $newProduct->setIsOriginal(0);
-                                    $newProduct->setPosition(10);
-                                    $newProduct->setIsActive(1);
-                                    $newProduct->setBrand($parsedItem['brand']);
-                                    $newProduct->setManufacturer($parsedItem['manufacturer']);
-                                    $newProduct->setPublisher($parsedItem['publisher']);
-                                    $newProduct->setStudio($parsedItem['studio']);
-                                    $newProduct->setTitle($parsedItem['title']);
-                                    $newProduct->setSmallImage($parsedItem['smallImage']);
-                                    $newProduct->setMarketplaces([$itemMarketplace]);
-
-                                    $this->entityManager->persist($newProduct);
-
-                                    $products[] = $newProduct;
-                                }
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                /** @var ProductMatching $productMatching */
+                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
-                                $listMatchingProduct->setAction("пропуск_асин_конкурент");
-                                $this->entityManager->merge($listMatchingProduct);
+                                if (isset($productMatching)) {
+                                    /** @var Marketplace $itemMarketplace */
+                                    $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                        ->findOneBy(['code' => $productMatching->getMarketplaceCode()]);
+
+                                    /** @var Product $product */
+                                    $product = $this->entityManager->getRepository(Product::class)
+                                        ->findOneBy(['asin' => $productMatching->getAsin()]);
+
+                                    if ($product) {
+                                        if (!$product->inMarketplace($itemMarketplace)) {
+                                            $product->addMarketplace($itemMarketplace);
+                                        }
+
+                                        $product->setOriginalAsin($productMatching->getAsinOur());
+                                        $product->setName($productMatching->getName());
+                                        $product->setBrand($productMatching->getBrand());
+                                        $product->setManufacturer($productMatching->getManufacturer());
+                                        $product->setPublisher($productMatching->getPublisher());
+                                        $product->setStudio($productMatching->getStudio());
+                                        $product->setTitle($productMatching->getTitle());
+                                        $product->setSmallImage($productMatching->getSmallImageUrl());
+                                        $this->entityManager->merge($product);
+                                        $products[] = $product;
+                                    } else {
+                                        $newProduct = new Product();
+                                        $newProduct->setAsin($productMatching->getAsin());
+                                        $newProduct->setName($productMatching->getName());
+                                        $newProduct->setOriginalAsin($productMatching->getAsinOur());
+                                        $newProduct->setIsOriginal(0);
+                                        $newProduct->setPosition(10);
+                                        $newProduct->setIsActive(1);
+                                        $newProduct->setBrand($productMatching->getBrand());
+                                        $newProduct->setManufacturer($productMatching->getManufacturer());
+                                        $newProduct->setPublisher($productMatching->getPublisher());
+                                        $newProduct->setStudio($productMatching->getStudio());
+                                        $newProduct->setTitle($productMatching->getTitle());
+                                        $newProduct->setSmallImage($productMatching->getSmallImageUrl());
+                                        $newProduct->addMarketplace($itemMarketplace);
+                                        $this->entityManager->persist($newProduct);
+                                        $products[] = $newProduct;
+                                    }
+
+                                    /** @var ProductMatching $listMatchingProduct */
+                                    $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                        ->findOneBy(['id' => $parsedItem['id']]);
+
+                                    $listMatchingProduct->setAction("2_skip_asin_competitor");
+                                    $this->entityManager->merge($listMatchingProduct);
+                                }
                             }
                             $this->entityManager->flush();
 
@@ -1223,44 +1271,42 @@ class IndexAction extends AbstractAction
                             foreach ($data as $item) {
                                 $parsedItem = json_decode($item, true);
 
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var ProductIgnore $isIgnored */
-                                $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
-                                    ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $parsedItem['asin'])
-                                    ->getQuery()->getOneOrNullResult();
-
-                                if ($isIgnored) {
-                                    $isIgnored->setTitle($parsedItem['title']);
-                                    $isIgnored->setAsinOur($parsedItem['asinOur']);
-                                    $isIgnored->setImageUrl($parsedItem['imageUrl']);
-                                    $isIgnored->setAddedAt(new \DateTime());
-
-                                    $this->entityManager->merge($isIgnored);
-
-                                    $ignoredAsins[] = $isIgnored;
-                                } else {
-                                    $newProductIgnore = new ProductIgnore();
-                                    $newProductIgnore->setAsin($parsedItem['asin']);
-                                    $newProductIgnore->setTitle($parsedItem['title']);
-                                    $newProductIgnore->setAsinOur($parsedItem['asinOur']);
-                                    $newProductIgnore->setImageUrl($parsedItem['imageUrl']);
-                                    $newProductIgnore->setAddedAt(new \DateTime());
-                                    $newProductIgnore->setMarketplace($itemMarketplace);
-
-                                    $this->entityManager->persist($newProductIgnore);
-
-                                    $ignoredAsins[] = $newProductIgnore;
-                                }
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
+                                /** @var ProductMatching $productMatching */
+                                $productMatching = $this->entityManager->getRepository(ProductMatching::class)
                                     ->findOneBy(['id' => $parsedItem['id']]);
 
-                                $listMatchingProduct->setAction("пропуск_асин_в_игноре");
-                                $this->entityManager->merge($listMatchingProduct);
+                                if (isset($productMatching)) {
+                                    /** @var Marketplace $itemMarketplace */
+                                    $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
+                                        ->findOneBy(['code' => $productMatching->getMarketplaceCode()]);
+
+                                    /** @var ProductIgnore $isIgnored */
+                                    $isIgnored = $this->entityManager->getRepository(ProductIgnore::class)
+                                        ->getAsinIgnoreByMarketplaceAsin($itemMarketplace, $productMatching->getAsin())
+                                        ->getQuery()->getOneOrNullResult();
+
+                                    if ($isIgnored) {
+                                        $isIgnored->setTitle($productMatching->getTitle());
+                                        $isIgnored->setAsinOur($productMatching->getAsinOur());
+                                        $isIgnored->setImageUrl($productMatching->getSmallImageUrl());
+                                        $isIgnored->setAddedAt(new \DateTime());
+                                        $this->entityManager->merge($isIgnored);
+                                        $ignoredAsins[] = $isIgnored;
+                                    } else {
+                                        $newProductIgnore = new ProductIgnore();
+                                        $newProductIgnore->setAsin($productMatching->getAsin());
+                                        $newProductIgnore->setTitle($productMatching->getTitle());
+                                        $newProductIgnore->setAsinOur($productMatching->getAsinOur());
+                                        $newProductIgnore->setImageUrl($productMatching->getSmallImageUrl());
+                                        $newProductIgnore->setAddedAt(new \DateTime());
+                                        $newProductIgnore->setMarketplace($itemMarketplace);
+                                        $this->entityManager->persist($newProductIgnore);
+                                        $ignoredAsins[] = $newProductIgnore;
+                                    }
+
+                                    $productMatching->setAction("3_asin_in_ignore");
+                                    $this->entityManager->merge($productMatching);
+                                }
                             }
                             $this->entityManager->flush();
 
@@ -1268,40 +1314,22 @@ class IndexAction extends AbstractAction
                         }
                     ],
 
-                    'keywordMatchingAction' => [
+                    'keywordMatchingClear' => [
                         'type' => Type::listOf($this->types->getOutput(ProductMatching::class)),
                         'args' => [
                             'keywordMatchingData' => Type::listOf(Type::nonNull(Type::string()))
                         ],
                         'resolve' => function($root, $args) {
-                            $keywordMatchingProducts = [];
-                            $data = $args['keywordMatchingData'];
+                            $keywordMatchingProducts = $this->entityManager->getRepository(ProductMatching::class)
+                                ->getAllMatchingProducts($this->pool()->current())
+                                ->getQuery()->getResult();
 
-                            foreach ($data as $item) {
-                                $parsedItem = json_decode($item, true);
-
-                                /** @var Marketplace $itemMarketplace */
-                                $itemMarketplace = $this->entityManager->getRepository(Marketplace::class)
-                                    ->findOneBy(['code' => $parsedItem['marketplaceCode']]);
-
-                                /** @var ProductMatching $listMatchingProduct */
-                                $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
-                                    ->findOneBy(['id' => $parsedItem['id']]);
-
-                                if (strlen(trim($listMatchingProduct->getAction())) == 0) {
-                                    if ($parsedItem['asin'] == $parsedItem['asinOur'] &&
-                                        $parsedItem['marketplace'] == $itemMarketplace->getId()) {
-                                        $listMatchingProduct->setAction("пропуск_асин_есть_в_этой_таблице");
-                                        $this->entityManager->merge($listMatchingProduct);
-                                    } elseif ($parsedItem['asin'] == $parsedItem['asinOur']) {
-                                        $listMatchingProduct->setAction("пропуск_асин_наш");
-                                        $this->entityManager->merge($listMatchingProduct);
-                                    } else {
-                                        $listMatchingProduct->setAction("решить что делать с товаром");
-                                        $this->entityManager->merge($listMatchingProduct);
-                                    }
+                            foreach ($keywordMatchingProducts as $index => $keywordMatchingProduct) {
+                                if (strlen(trim($keywordMatchingProduct->getAction())) != 0
+                                    && $keywordMatchingProduct->getAction() != "0_select_what_to_do") {
+                                    $this->entityManager->remove($keywordMatchingProduct);
+                                    unset($keywordMatchingProducts[$index]);
                                 }
-                                $keywordMatchingProducts[] = $listMatchingProduct;
                             }
                             $this->entityManager->flush();
 
@@ -1349,8 +1377,9 @@ class IndexAction extends AbstractAction
             #return new JsonResponse();
 
 
-        } catch (\Exception $e) {
-            StandardServer::send500Error($e);
+	} catch (\Exception $e) {
+		var_dump($e->getMessage());    
+		StandardServer::send500Error($e);
         }
 
         return new EmptyResponse(200);
