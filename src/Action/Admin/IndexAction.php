@@ -1335,7 +1335,25 @@ class IndexAction extends AbstractAction
 
                             return $keywordMatchingProducts;
                         }
-                    ]
+                    ],
+
+                    'runQueueAction' => [
+                        'type' => Type::string(),
+                        'args' => [
+                            'jobId' => Type::nonNull(Type::ID()),
+                            'action' => Type::nonNull(Type::string()),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            /** @var Module $module */
+                            $module = $this->entityManager->getRepository(Module::class)->findOneBy(['mnemo' => 'report']);
+                            $namespace = $module->getName() . "\Service\QueueService";
+                            $entity = $this->serviceManager->get($namespace);
+                            $result = call_user_func_array([$entity, $args['action'] . "Queue"], [$args['jobId']]);
+
+                            //$this->entityManager->flush();
+                            return $result;
+                        },
+                    ],
                 ],
             ]);
 
