@@ -800,12 +800,12 @@ class IndexAction extends AbstractAction
                             'options' => Type::nonNull(Type::string()),
                             'entity' => Type::nonNull(Type::id()),
                             'pool' => Type::nonNull(Type::id()),
-                            'configuratorAlgorithm' => Type::nonNull(Type::id()),
+                            'configuratorAlgorithm' => Type::nonNull(Type::string()),
                         ],
                         'resolve' => function($root, $args) {
                             $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
                             $pool = $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['pool']]);
-                            $configuratorAlgorithm = $this->entityManager->getRepository(ConfiguratorAlgorithm::class)->findOneBy(['id' => $args['configuratorAlgorithm']]);
+                            $configuratorAlgorithm = $this->entityManager->getRepository(ConfiguratorAlgorithm::class)->findOneBy(['mnemo' => $args['configuratorAlgorithm']]);
 
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
