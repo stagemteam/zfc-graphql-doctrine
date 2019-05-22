@@ -1344,11 +1344,13 @@ class IndexAction extends AbstractAction
                             'action' => Type::nonNull(Type::string()),
                         ],
                         'resolve' => function ($root, $args) {
+                            /** @var ConfiguratorJob $job */
+                            $job = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['jobId']]);
                             /** @var Module $module */
                             $module = $this->entityManager->getRepository(Module::class)->findOneBy(['mnemo' => 'report']);
                             $namespace = $module->getName() . "\Service\QueueService";
                             $entity = $this->serviceManager->get($namespace);
-                            $result = call_user_func_array([$entity, $args['action'] . "Queue"], [$args['jobId']]);
+                            $result = call_user_func_array([$entity, $args['action'] . "Queue"], [$job]);
 
                             //$this->entityManager->flush();
                             return $result;
