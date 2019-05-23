@@ -800,12 +800,12 @@ class IndexAction extends AbstractAction
                             'options' => Type::nonNull(Type::string()),
                             'entity' => Type::nonNull(Type::id()),
                             'pool' => Type::nonNull(Type::id()),
-                            'configuratorAlgorithm' => Type::nonNull(Type::id()),
+                            'configuratorAlgorithm' => Type::nonNull(Type::string()),
                         ],
                         'resolve' => function($root, $args) {
                             $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
                             $pool = $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['pool']]);
-                            $configuratorAlgorithm = $this->entityManager->getRepository(ConfiguratorAlgorithm::class)->findOneBy(['id' => $args['configuratorAlgorithm']]);
+                            $configuratorAlgorithm = $this->entityManager->getRepository(ConfiguratorAlgorithm::class)->findOneBy(['mnemo' => $args['configuratorAlgorithm']]);
 
                             $configuratorJob = new ConfiguratorJob();
                             $configuratorJob->setName($args['name']);
@@ -1333,7 +1333,27 @@ class IndexAction extends AbstractAction
 
                             return $keywordMatchingProducts;
                         }
-                    ]
+                    ],
+
+                    'runQueueAction' => [
+                        'type' => Type::string(),
+                        'args' => [
+                            'jobId' => Type::nonNull(Type::ID()),
+                            'action' => Type::nonNull(Type::string()),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            /** @var ConfiguratorJob $job */
+                            $job = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['jobId']]);
+                            /** @var Module $module */
+                            $module = $this->entityManager->getRepository(Module::class)->findOneBy(['mnemo' => 'report']);
+                            $namespace = $module->getName() . "\Service\QueueService";
+                            $entity = $this->serviceManager->get($namespace);
+                            $result = call_user_func_array([$entity, $args['action'] . "Queue"], [$job]);
+
+                            //$this->entityManager->flush();
+                            return $result;
+                        },
+                    ],
                 ],
             ]);
 
