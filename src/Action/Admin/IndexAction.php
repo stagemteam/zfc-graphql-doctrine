@@ -697,6 +697,24 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    'logout' => [
+                        //'type' => Type::nonNull($this->types->getOutput(User::class)),
+                        'type' => new \GraphQL\Type\Definition\ObjectType([
+                            'name' => 'Token',
+                            'fields' => [
+                                'token' => Type::boolean(),
+                            ],
+                        ]),
+                        /*'args' => [
+                            'email' => Type::nonNull(Type::string()), // Use standard API when needed
+                            'password' => Type::nonNull(Type::string()), // Use standard API when needed
+                            //'input' => $this->types->getPartialInput(Post::class),  // Use automated InputObjectType for partial input for updates
+                        ],*/
+                        'resolve' => function ($root, $args) {
+                            return ['token' => false];
+                        },
+                    ],
+
                     'runJob' => [
                         'type' => Type::listOf(Type::string()),
                         'args' => [
