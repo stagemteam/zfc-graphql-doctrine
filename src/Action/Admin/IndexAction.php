@@ -994,7 +994,7 @@ class IndexAction extends AbstractAction
 
                                 if ($review && $order) {
                                     $review->setIsTest(true);
-                                    $review->setOrder($order);
+                                    $review->setMarketOrder($order);
                                     $review->setOrderCode($order->getCode());
                                     $order->setIsTest(true);
 
@@ -1376,6 +1376,7 @@ class IndexAction extends AbstractAction
 
 
 	} catch (\Exception $e) {
+            die(__METHOD__);
 		var_dump($e->getMessage());    
 		StandardServer::send500Error($e);
         }
