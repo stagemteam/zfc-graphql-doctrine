@@ -715,7 +715,12 @@ class IndexAction extends AbstractAction
 
                             $method = explode('::', $algorithm->getCallback());
                             $entity = $this->serviceManager->get($method[0]);
-                            $result = call_user_func_array([$entity, $method[1]], [$job, null]);
+
+                            if ($method[1] == "updateEtalon") {
+                                $result = call_user_func_array([$entity, $method[1]], [$job]);
+                            } else {
+                                $result = call_user_func_array([$entity, $method[1]], [$job, null]);
+                            }
 
                             $this->entityManager->flush();
 
@@ -1352,7 +1357,8 @@ class IndexAction extends AbstractAction
                             $entity = $this->serviceManager->get($namespace);
                             $result = call_user_func_array([$entity, $args['action'] . "Queue"], [$job]);
 
-                            //$this->entityManager->flush();
+                            $this->entityManager->flush();
+
                             return $result;
                         },
                     ],
