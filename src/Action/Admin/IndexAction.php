@@ -697,6 +697,24 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
+                    'logout' => [
+                        //'type' => Type::nonNull($this->types->getOutput(User::class)),
+                        'type' => new \GraphQL\Type\Definition\ObjectType([
+                            'name' => 'Token',
+                            'fields' => [
+                                'token' => Type::boolean(),
+                            ],
+                        ]),
+                        /*'args' => [
+                            'email' => Type::nonNull(Type::string()), // Use standard API when needed
+                            'password' => Type::nonNull(Type::string()), // Use standard API when needed
+                            //'input' => $this->types->getPartialInput(Post::class),  // Use automated InputObjectType for partial input for updates
+                        ],*/
+                        'resolve' => function ($root, $args) {
+                            return ['token' => false];
+                        },
+                    ],
+
                     'runJob' => [
                         'type' => Type::listOf(Type::string()),
                         'args' => [
@@ -940,6 +958,7 @@ class IndexAction extends AbstractAction
                             foreach ($args['orders'] as $key => $order) {
                                 $args['orders'][$key] = trim($order);
                             }
+
                             $orders = $this->entityManager->getRepository(MarketOrder::class)->findBy(['code' => $args['orders']]);
                             //$ordersSummary =
 
@@ -949,21 +968,21 @@ class IndexAction extends AbstractAction
 
                             foreach ($orders as $order) {
                                 $order->setIsTest(true);
-                                $this->entityManager->merge($order);
+                                //$this->entityManager->merge($order);
                                 $orderPurchaseAt = (clone $order->getPurchaseAt())->setTime(0,0);
                                 if(!isset($orderSummaryRows[$orderPurchaseAt->format('Y-m-d')])){
                                     //$dates[$orderPurchaseAt->format('Y-m-d')] = $orderPurchaseAt->setTime(0,0);
                                     $fromRepository = $this->entityManager->getRepository(OrderSummary::class)
-                                        ->findBy([
+                                        ->findOneBy([
                                             'marketplace' => $marketplace,
                                             'date' => $orderPurchaseAt,
                                         ]);
-                                    $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] =
-                                        array_pop($fromRepository);
+                                    if ($fromRepository) {
+                                        $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] = $fromRepository;
+                                    }
                                 }
                             }
                             $this->entityManager->flush();
-
 
 
                             $orderSummaryService = $this->container->get(OrderSummaryService::class);
@@ -971,9 +990,6 @@ class IndexAction extends AbstractAction
 
                             $orderSummaryRows = $summaryParser->processCertainDates($orderSummaryRows, $marketplace);
 
-                            foreach ($orderSummaryRows as $summaryRow){
-                                $this->entityManager->merge($summaryRow);
-                            }
                             $this->entityManager->flush(); //updated orderSummary table
 
                             return $orders;
@@ -1001,7 +1017,7 @@ class IndexAction extends AbstractAction
 
                                 if ($review && $order) {
                                     $review->setIsTest(true);
-                                    $review->setOrder($order);
+                                    $review->setMarketOrder($order);
                                     $review->setOrderCode($order->getCode());
                                     $order->setIsTest(true);
 
@@ -1404,6 +1420,7 @@ class IndexAction extends AbstractAction
 
 
 	} catch (\Exception $e) {
+            die(__METHOD__);
 		var_dump($e->getMessage());    
 		StandardServer::send500Error($e);
         }
