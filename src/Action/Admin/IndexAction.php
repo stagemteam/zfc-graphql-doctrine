@@ -698,9 +698,8 @@ class IndexAction extends AbstractAction
                     ],
 
                     'logout' => [
-                        //'type' => Type::nonNull($this->types->getOutput(User::class)),
                         'type' => new \GraphQL\Type\Definition\ObjectType([
-                            'name' => 'Token',
+                            'name' => 'Logout',
                             'fields' => [
                                 'token' => Type::boolean(),
                             ],
@@ -1411,12 +1410,9 @@ class IndexAction extends AbstractAction
             #ob_end_clean();
 
             #return new JsonResponse();
-
-
-	} catch (\Exception $e) {
-            die(__METHOD__);
-		var_dump($e->getMessage());    
-		StandardServer::send500Error($e);
+        } catch (\Exception $e) {
+            var_dump($e->getMessage());
+            StandardServer::send500Error($e);
         }
 
         return new EmptyResponse(200);
