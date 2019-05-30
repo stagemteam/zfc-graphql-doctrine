@@ -167,7 +167,7 @@ class IndexAction extends AbstractAction
                             $historyChartService = $this->container->get(HistoryChartService::class);
 
                             $product = $this->entityManager->find(Product::class, $args['productIds'][0]);
-                            $marketplace = $args['marketplace'] ?
+                            $marketplace = isset($args['marketplace']) ?
                                 $this->entityManager->getRepository(Marketplace::class)
                                     ->findOneBy(['id' => $args['marketplace']]) :
                                 $this->pool()->current();
