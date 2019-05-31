@@ -84,9 +84,11 @@ class GraphQLMiddleware implements MiddlewareInterface
                 } elseif ($bodyParams['operationName'] === 'LogoutMutation') {
                     $this->logout();
                     //$this->userService->setCurrent(null);
-                } elseif (!$this->auth->hasIdentity()) {
-                    StandardServer::send500Error(new Exception('Unauthorized request'), false, true);
                 }
+                // @todo Uncomment when new React will be used
+                #elseif (!$this->auth->hasIdentity()) {
+                    #StandardServer::send500Error(new Exception('Unauthorized request'), false, true);
+                #}
             }
         }
 
