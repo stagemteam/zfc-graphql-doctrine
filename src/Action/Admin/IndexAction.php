@@ -649,13 +649,13 @@ class IndexAction extends AbstractAction
                             ],
                         ],
                         'resolve' => function ($root, $args) {
-                            $qb = $this->types->createFilteredQueryBuilder(ReportType::class, $args['filter'] ?? [],
-                                $args['sorting'] ?? []);
+                            $qb = $this->types->createFilteredQueryBuilder(ReportType::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
                             $result = $qb->getQuery()->getResult();
 
                             return $result;
                         },
-                    ],
+                    ]
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
