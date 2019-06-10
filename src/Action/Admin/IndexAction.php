@@ -1425,3 +1425,4 @@ class IndexAction extends AbstractAction
         return new EmptyResponse(200);
     }
 }
+
