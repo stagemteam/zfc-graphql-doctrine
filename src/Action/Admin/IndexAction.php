@@ -18,6 +18,7 @@ namespace Stagem\ZfcGraphQL\Action\Admin;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use function Functional\push;
+use HaydenPierce\ClassFinder\ClassFinder;
 use Popov\ZfcEntity\Model\Entity;
 use Popov\ZfcRole\Model\Role;
 use Popov\ZfcUser\Helper\UserHelper;
@@ -107,12 +108,13 @@ class IndexAction extends AbstractAction
 
     //public function __construct(ContainerInterface $container, EntityManager $entityManager)
     //public function __construct(\Stagem\ZfcGraphQL\Service\Plugin\GraphPluginManager $container, EntityManager $entityManager)
-    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container, ServiceManager $serviceManager)
+    public function __construct(Types $types, EntityManager $entityManager, ContainerInterface $container, ServiceManager $serviceManager, array $config)
     {
         $this->types = $types;
         $this->container = $container;
         $this->entityManager = $entityManager;
         $this->serviceManager = $serviceManager;
+        $this->config = $config;
 
         //$entityManager->getConfiguration()
 
@@ -133,6 +135,7 @@ class IndexAction extends AbstractAction
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+
         #$this->container->setAllowOverride(true);
         #$this->container->setInvokableClass(DateTime::class, DateTimeType::class);
         #$this->container->setAllowOverride(false);
