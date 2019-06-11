@@ -45,6 +45,8 @@ use Stagem\Order\Model\OrderSummary;
 use Stagem\Order\Parser\OrderSummaryParser;
 use Stagem\Order\Service\OrderSummaryService;
 use Stagem\Parser\Service\ParserService;
+use Stagem\Product\Block\Admin\Rank\BSRMonitorBlock;
+use Stagem\Product\GraphQL\Type\BSRMonitorType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Service\HistoryChartService;
@@ -655,6 +657,21 @@ class IndexAction extends AbstractAction
 
                             return $result;
                         },
+                    ],
+
+                    'BSRMonitor' => [
+                        'type' => Type::listOf($this->types->get(BSRMonitorType::class)),
+                        'description' => 'Returns BSR monitor',
+                        'args' => [
+
+                        ],
+                        'resolve' => function ($root, $args) {
+                            /** @var BSRMonitorBlock $BSRMonitorBlock */
+                            $BSRMonitorBlock = $this->serviceManager->get(BSRMonitorBlock::class);
+                            $items = $BSRMonitorBlock->getBSRMonitor();
+
+                            return $items;
+                        }
                     ]
                 ],
                 'resolveField' => function($val, $args, $context, ResolveInfo $info) {
