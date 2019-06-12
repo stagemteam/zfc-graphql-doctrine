@@ -1344,7 +1344,7 @@ class IndexAction extends AbstractAction
                         ],
                         'resolve' => function ($root, $args) {
                             $user = $this->user()->current();
-                            $user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
+                            //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
 
                             $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserBsrSettings::class)->findOneBy(['user' => $user]))
                                 ? $userBsrSetting
