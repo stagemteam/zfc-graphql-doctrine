@@ -35,6 +35,7 @@ use Interop\Http\Server\RequestHandlerInterface;
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
 use Stagem\GraphQL\Type\DateType;
+use Stagem\GraphQL\Type\JsonType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Keyword\Model\ProductIgnore;
 use Stagem\Keyword\Model\Keyword;
@@ -656,7 +657,7 @@ class IndexAction extends AbstractAction
                         },
                     ],
 
-                    'bsrMonitor' => [
+                    'bsrMonitors' => [
                         'type' => Type::listOf($this->types->get(BSRMonitorType::class)),
                         'description' => 'Returns BSR monitor',
                         'args' => [
@@ -664,15 +665,12 @@ class IndexAction extends AbstractAction
                             'endedAt' => $this->types->get(DateType::class)
                         ],
                         'resolve' => function ($root, $args) {
-                            /** @var BsrMonitorBlock $BSRMonitorBlock */
-                            $BSRMonitorBlock = $this->serviceManager->get(BsrMonitorBlock::class);
-                            //$args['startedAt'] = new \DateTime("2019-01-04 23:00:00");
-                            //$args['endedAt'] = new \DateTime("2019-01-05 23:59:59");
+                            /** @var BsrMonitorBlock $bsrMonitorBlock */
+                            $bsrMonitorBlock = $this->serviceManager->get(BsrMonitorBlock::class);
+                            $args['startedAt'] = $args['startedAt'] ?? (new \DateTime())->setTime(23, 00, 00)->modify('-24 hours');
+                            $args['endedAt'] = $args['endedAt'] ?? (new \DateTime());
 
-                            $items = [];
-                            if (isset($args['startedAt']) && isset($args['endedAt'])) {
-                                $items = $BSRMonitorBlock->getBSRMonitor($args['startedAt']->format('Y-m-d H:i:s'), $args['endedAt']->format('Y-m-d H:i:s'));
-                            }
+                            $items = $bsrMonitorBlock->getBSRMonitor($args['startedAt'], $args['endedAt']);
 
                             return $items;
                         }
@@ -1341,16 +1339,20 @@ class IndexAction extends AbstractAction
                     'saveBsrMonitorSettings' => [
                         'type' => Type::listOf($this->types->getOutput(UserBsrSettings::class)),
                         'args' => [
-                            'options' => Type::listOf(Type::string()),
+                            'settings' => Type::listOf($this->types->get(JsonType::class)),
                         ],
                         'resolve' => function ($root, $args) {
-                            $user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
+                            $user = $this->user()->current();
+                            //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
                             $userBsrSettings = [];
-                            foreach ($args['options'] as $key => $option) {
-                                $userBsrSettings[$key] = new UserBsrSettings();
-                                $userBsrSettings[$key]->setUserId($this->user()->current());
-                                $userBsrSettings[$key]->setOptions($option);
-                                $this->entityManager->persist($userBsrSettings[$key]);
+                            foreach ($args['settings'] as $key => $setting) {
+                                $userBsrSetting = new UserBsrSettings();
+                                $userBsrSetting->setUser($user);
+                                $userBsrSetting->setSettings($setting);
+
+                                $this->entityManager->persist($userBsrSetting);
+
+                                $userBsrSettings[] = $userBsrSetting;
                             }
                             $this->entityManager->flush();
 
