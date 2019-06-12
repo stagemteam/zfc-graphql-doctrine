@@ -34,6 +34,7 @@ use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
+use Stagem\GraphQL\Type\DateTimeType;
 use Stagem\GraphQL\Type\DateType;
 use Stagem\GraphQL\Type\JsonType;
 use Stagem\GraphQL\Type\TimeType;
@@ -661,8 +662,8 @@ class IndexAction extends AbstractAction
                         'type' => Type::listOf($this->types->get(BSRMonitorType::class)),
                         'description' => 'Returns BSR monitor',
                         'args' => [
-                            'startedAt' => $this->types->get(DateType::class),
-                            'endedAt' => $this->types->get(DateType::class)
+                            'startedAt' => $this->types->get(DateTimeType::class),
+                            'endedAt' => $this->types->get(DateTimeType::class)
                         ],
                         'resolve' => function ($root, $args) {
                             /** @var BsrMonitorBlock $bsrMonitorBlock */
