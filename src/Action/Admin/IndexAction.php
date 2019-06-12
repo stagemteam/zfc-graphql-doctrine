@@ -1337,8 +1337,7 @@ class IndexAction extends AbstractAction
                             $userBsrSettings = [];
                             foreach ($args['options'] as $key => $option) {
                                 $userBsrSettings[$key] = new UserBsrSettings();
-                                $userBsrSettings[$key]->setUserId($user->getId());
-                                //$userBsrSettings[$key]->setUserId($this->user()->current());
+                                $userBsrSettings[$key]->setUserId($this->user()->current());
                                 $userBsrSettings[$key]->setOptions($option);
                                 $this->entityManager->persist($userBsrSettings[$key]);
                             }
