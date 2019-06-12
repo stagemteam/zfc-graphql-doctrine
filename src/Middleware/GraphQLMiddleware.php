@@ -11,15 +11,18 @@ namespace Stagem\ZfcGraphQL\Middleware;
 // @todo wait until they will start to use Pst in codebase @see https://github.com/zendframework/zend-mvc/blob/master/src/MiddlewareListener.php#L11
 class_alias('Interop\Http\Server\MiddlewareInterface', 'Interop\Http\ServerMiddleware\MiddlewareInterface');
 
+use Exception;
 // @todo wait until they will start to use Pst in codebase @see https://github.com/zendframework/zend-mvc/blob/master/src/MiddlewareListener.php#L11
 //use Psr\Http\Server\MiddlewareInterface;
 //use Psr\Http\Server\RequestHandlerInterface;
 use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Interop\Http\Server\RequestHandlerInterface;
 use Popov\ZfcUser\Action\Admin\LoginTrait;
+use Popov\ZfcUser\Action\Admin\LogoutTrait;
 use Popov\ZfcUser\Form\LoginForm;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use GraphQL\Server\StandardServer;
 
 use Zend\Session\SessionManager;
 
@@ -33,6 +36,8 @@ use Popov\ZfcUser\Auth\Auth;
 class GraphQLMiddleware implements MiddlewareInterface
 {
     use LoginTrait;
+
+    use LogoutTrait;
 
     protected $userService;
 
@@ -66,17 +71,24 @@ class GraphQLMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         // GraphQL authorization.
-        // Here we execute login and on Schema level only return user token (session ID).
+        // Here we execute login and logout. On Schema level return only user token (session ID).
         $contentType = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
         if (stripos($contentType, 'application/json') !== false) {
             $rawBody = file_get_contents('php://input');
             $bodyParams = json_decode($rawBody ?: '', true);
-            if (isset($bodyParams['operationName']) && $bodyParams['operationName'] === 'LoginMutation') {
-                $authService = $this->auth->getAuthService();
-                if (!$authService->hasIdentity()) {
-                    $user = $this->login($request = $request->withParsedBody($bodyParams['variables']));
-                    $this->userService->setCurrent($user);
+            if (isset($bodyParams['operationName'])) {
+                if ($bodyParams['operationName'] === 'LoginMutation') {
+                    if ($user = $this->login($request = $request->withParsedBody($bodyParams['variables']))) {
+                        $this->userService->setCurrent($user);
+                    }
+                } elseif ($bodyParams['operationName'] === 'LogoutMutation') {
+                    $this->logout();
+                    //$this->userService->setCurrent(null);
                 }
+                // @todo Uncomment when new React will be used
+                #elseif (!$this->auth->hasIdentity()) {
+                    #StandardServer::send500Error(new Exception('Unauthorized request'), false, true);
+                #}
             }
         }
 
