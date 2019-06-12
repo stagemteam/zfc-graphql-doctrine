@@ -1340,11 +1340,11 @@ class IndexAction extends AbstractAction
                     'saveBsrMonitorSettings' => [
                         'type' => $this->types->getOutput(UserBsrSettings::class),
                         'args' => [
-                            'settings' => Type::listOf($this->types->get(JsonType::class)),
+                            'settings' => $this->types->get(JsonType::class),
                         ],
                         'resolve' => function ($root, $args) {
                             $user = $this->user()->current();
-                            //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
+                            $user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
 
                             $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserBsrSettings::class)->findOneBy(['user' => $user]))
                                 ? $userBsrSetting
