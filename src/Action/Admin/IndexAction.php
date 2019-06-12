@@ -662,8 +662,8 @@ class IndexAction extends AbstractAction
                         'resolve' => function ($root, $args) {
                             /** @var BsrMonitorBlock $BSRMonitorBlock */
                             $BSRMonitorBlock = $this->serviceManager->get(BsrMonitorBlock::class);
-                            /*$args['startedAt'] = new \DateTime("2019-01-04 23:00:00");
-                            $args['endedAt'] = new \DateTime("2019-01-05 23:59:59");*/
+                            $args['startedAt'] = new \DateTime("2019-01-04 23:00:00");
+                            $args['endedAt'] = new \DateTime("2019-01-05 23:59:59");
 
                             $items = [];
                             if (isset($args['startedAt']) && isset($args['endedAt'])) {
