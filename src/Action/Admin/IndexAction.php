@@ -18,6 +18,7 @@ namespace Stagem\ZfcGraphQL\Action\Admin;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use function Functional\push;
+use HaydenPierce\ClassFinder\ClassFinder;
 use Popov\ZfcEntity\Model\Entity;
 use Popov\ZfcRole\Model\Role;
 use Popov\ZfcUser\Helper\UserHelper;
@@ -115,6 +116,8 @@ class IndexAction extends AbstractAction
         $this->container = $container;
         $this->entityManager = $entityManager;
         $this->serviceManager = $serviceManager;
+        //$this->config = $config;
+
         //$entityManager->getConfiguration()
         /** @var \Doctrine\ORM\Configuration $doctrineConfig */
         // @todo remove when will be fixed @see https://github.com/Ecodev/graphql-doctrine/issues/21#issuecomment-432064584
@@ -133,6 +136,7 @@ class IndexAction extends AbstractAction
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+
         #$this->container->setAllowOverride(true);
         #$this->container->setInvokableClass(DateTime::class, DateTimeType::class);
         #$this->container->setAllowOverride(false);
@@ -662,8 +666,8 @@ class IndexAction extends AbstractAction
                         'resolve' => function ($root, $args) {
                             /** @var BsrMonitorBlock $BSRMonitorBlock */
                             $BSRMonitorBlock = $this->serviceManager->get(BsrMonitorBlock::class);
-                            $args['startedAt'] = new \DateTime("2019-01-04 23:00:00");
-                            $args['endedAt'] = new \DateTime("2019-01-05 23:59:59");
+                            //$args['startedAt'] = new \DateTime("2019-01-04 23:00:00");
+                            //$args['endedAt'] = new \DateTime("2019-01-05 23:59:59");
 
                             $items = [];
                             if (isset($args['startedAt']) && isset($args['endedAt'])) {
