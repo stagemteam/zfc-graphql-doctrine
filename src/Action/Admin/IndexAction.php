@@ -1338,26 +1338,26 @@ class IndexAction extends AbstractAction
                         },
                     ],
                     'saveBsrMonitorSettings' => [
-                        'type' => Type::listOf($this->types->getOutput(UserBsrSettings::class)),
+                        'type' => $this->types->getOutput(UserBsrSettings::class),
                         'args' => [
                             'settings' => Type::listOf($this->types->get(JsonType::class)),
                         ],
                         'resolve' => function ($root, $args) {
                             $user = $this->user()->current();
                             //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
-                            $userBsrSettings = [];
-                            foreach ($args['settings'] as $key => $setting) {
-                                $userBsrSetting = new UserBsrSettings();
-                                $userBsrSetting->setUser($user);
-                                $userBsrSetting->setSettings($setting);
 
-                                $this->entityManager->persist($userBsrSetting);
+                            $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserBsrSettings::class)->findOneBy(['user' => $user]))
+                                ? $userBsrSetting
+                                : new UserBsrSettings();
 
-                                $userBsrSettings[] = $userBsrSetting;
-                            }
+                            $userBsrSetting->setUser($user);
+                            $userBsrSetting->setSettings($args['settings']);
+
+                            $this->entityManager->persist($userBsrSetting);
+
                             $this->entityManager->flush();
 
-                            return $userBsrSettings;
+                            return $userBsrSetting;
                         },
                     ],
                 ],
