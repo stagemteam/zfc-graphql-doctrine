@@ -158,7 +158,7 @@ class IndexAction extends AbstractAction
 
             $classes = [];
             foreach ($pathToQueries as $dir) {
-                $classes += (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir);
+                $classes += array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
             }
             $queryFields = [];
             foreach ($classes as $queryClass) {
@@ -592,7 +592,7 @@ class IndexAction extends AbstractAction
 
             $classes = [];
             foreach ($pathToMutations as $dir) {
-                $classes += (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir);
+                $classes += array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
             }
             $mutationFields = [];
             foreach ($classes as $mutationClass) {
