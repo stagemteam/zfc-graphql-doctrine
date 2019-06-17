@@ -51,7 +51,7 @@ use Stagem\Product\Block\Admin\Rank\BsrMonitorBlock;
 use Stagem\Product\GraphQL\Type\BSRMonitorType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
-use Stagem\Product\Model\UserBsrSettings;
+use Stagem\Product\Model\UserMonitorSettings;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
 use Stagem\Report\Model\ReportType;
@@ -1338,7 +1338,7 @@ class IndexAction extends AbstractAction
                         },
                     ],
                     'saveBsrMonitorSettings' => [
-                        'type' => $this->types->getOutput(UserBsrSettings::class),
+                        'type' => $this->types->getOutput(UserMonitorSettings::class),
                         'args' => [
                             'settings' => $this->types->get(JsonType::class),
                         ],
@@ -1346,9 +1346,9 @@ class IndexAction extends AbstractAction
                             $user = $this->user()->current();
                             //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
 
-                            $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserBsrSettings::class)->findOneBy(['user' => $user]))
+                            $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserMonitorSettings::class)->findOneBy(['user' => $user]))
                                 ? $userBsrSetting
-                                : new UserBsrSettings();
+                                : new UserMonitorSettings();
 
                             $userBsrSetting->setUser($user);
                             $userBsrSetting->setSettings($args['settings']);
