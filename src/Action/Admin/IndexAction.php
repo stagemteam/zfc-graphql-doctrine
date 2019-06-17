@@ -32,9 +32,12 @@ use Psr\Http\Message\ServerRequestInterface;
 //use Psr\Http\Server\RequestHandlerInterface;
 use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Interop\Http\Server\RequestHandlerInterface;
+
 use Fig\Http\Message\RequestMethodInterface;
 use Stagem\Customer\Model\Customer;
+use Stagem\GraphQL\Type\DateTimeType;
 use Stagem\GraphQL\Type\DateType;
+use Stagem\GraphQL\Type\JsonType;
 use Stagem\GraphQL\Type\TimeType;
 use Stagem\Keyword\Model\ProductIgnore;
 use Stagem\Keyword\Model\Keyword;
@@ -45,8 +48,11 @@ use Stagem\Order\Model\OrderSummary;
 use Stagem\Order\Parser\OrderSummaryParser;
 use Stagem\Order\Service\OrderSummaryService;
 use Stagem\Parser\Service\ParserService;
+use Stagem\Product\Block\Admin\Rank\BsrMonitorBlock;
+use Stagem\Product\GraphQL\Type\BSRMonitorType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
+use Stagem\Product\Model\UserMonitorSettings;
 use Stagem\Product\Service\HistoryChartService;
 use Stagem\Product\Service\HistoryService;
 use Stagem\Report\Model\ReportType;
@@ -69,8 +75,10 @@ use Zend\Diactoros\Response\EmptyResponse;
 use Zend\Diactoros\Response\JsonResponse;
 use Zend\Diactoros\Response\TextResponse;
 use Zend\ServiceManager\ServiceManager;
+
 use GraphQL\GraphQL;
 use GraphQL\Type\Schema;
+
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -79,9 +87,12 @@ use GraphQL\Server\StandardServer;
 use GraphQL\Doctrine\DefaultFieldResolver;
 use GraphQL\Doctrine\Types;
 use Stagem\Amazon\Model\Marketplace;
+
 use GraphQL\Examples\Blog\AppContext;
+
 use Stagem\ZfcAction\Page\AbstractAction;
 use Zend\Stdlib\Exception\InvalidArgumentException;
+
 
 //class IndexAction implements MiddlewareInterface, RequestMethodInterface
 class IndexAction extends AbstractAction
@@ -115,7 +126,9 @@ class IndexAction extends AbstractAction
         $this->entityManager = $entityManager;
         $this->serviceManager = $serviceManager;
         $this->config = $config;
+
         //$entityManager->getConfiguration()
+
         /** @var \Doctrine\ORM\Configuration $doctrineConfig */
         // @todo remove when will be fixed @see https://github.com/Ecodev/graphql-doctrine/issues/21#issuecomment-432064584
         //$doctrineConfig = $this->container->get('doctrine.configuration.orm_default');
@@ -137,12 +150,16 @@ class IndexAction extends AbstractAction
         #$this->container->setAllowOverride(true);
         #$this->container->setInvokableClass(DateTime::class, DateTimeType::class);
         #$this->container->setAllowOverride(false);
+
         // Configure the type registry
         //$types = new Types($this->entityManager, $this->container);
         //$types = $this->types;
+
         //$date = $types->get(\DateTime::class);
+
         // Configure default field resolver to be able to use getters
         GraphQL::setDefaultFieldResolver(new DefaultFieldResolver());
+
         //$rankTrackingType = $this->container->get(RankTrackingType::class);
         //$rankTrackingType = $types->get(RankTrackingType::class);
         try {
@@ -190,6 +207,14 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(Review::class), // Use automated sorting options
                         ],
+                        'resolve' => function ($root, $args) {
+                            $queryBuilder = $this->types->createFilteredQueryBuilder(Product::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $queryBuilder->getQuery()->getResult();
+
+
+                            return $result;
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(Review::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -219,6 +244,25 @@ class IndexAction extends AbstractAction
                         $dates['startedAt'] = $args['startedAt'];
                         $dates['endedAt'] = $args['endedAt'];
 
+                    'reviewStars' => [
+                        'type' => Type::listOf(new \GraphQL\Type\Definition\ObjectType([
+                            'name' => 'reviewStar',
+                            'fields' => [
+                                'rate' => Type::nonNull(Type::string()),
+                                'rateCount' => Type::nonNull(Type::int()),
+                                'createdAt' => $this->types->get(\DateTime::class),
+                                'isRemoved' => Type::nonNull(Type::int()),
+                            ],
+                        ])),
+                        'args' => [
+                            'marketplace' => Type::id(),
+                            'startedAt' => $this->types->get(\DateTime::class),
+                            'endedAt' => $this->types->get(\DateTime::class),
+                        ],
+                        'resolve' => function ($root, $args) {
+                            $marketplace = isset($args['marketplace']) ? $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['marketplace']]) : null;
+                            $dates['startedAt'] = $args['startedAt'];
+                            $dates['endedAt'] = $args['endedAt'];
 
                         $data = $this->serviceManager->get(ReviewService::class)
                             ->getReviewsStarsWithDates($marketplace, $dates);
@@ -381,12 +425,14 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(Entity::class), // Use automated sorting options
                         ],
+                        
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(Entity::class, $args['filter'] ?? [], $args['sorting'] ?? []);
 
                         $result = $queryBuilder->getQuery()->getResult();
 
+                            $result = $queryBuilder->getQuery()->getResult();
 
                         return $result;
                     },
@@ -413,6 +459,16 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(Module::class), // Use automated sorting options
                         ],
+                        'resolve' => function ($root, $args) {
+                            //$marketplace = $this->pool()->current();
+                            //$args['filter']['marketplace'] = $marketplace;
+
+                            $qb = $this->types->createFilteredQueryBuilder(OrderSummary::class, $args['filter'] ?? [], $args['sorting'] ?? []);
+
+                            $result = $qb->getQuery()->getResult();
+
+                            return $result;
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(Module::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -433,6 +489,14 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(ConfiguratorJob::class), // Use automated sorting options
                         ],
+                        'resolve' => function ($root, $args) {
+                            if ($user = $this->user()->current()) {
+                                return ['token' => session_id()];
+                            }
+                            throw new InvalidArgumentException(
+                                'GraphQLMiddleware cannot find user with credential passed to LoginMutation'
+                            );
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorJob::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -453,6 +517,29 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(ConfiguratorAlgorithm::class), // Use automated sorting options
                         ],
+                        'resolve' => function ($root, $args) {
+                            $entity = $this->entityManager->getRepository(Entity::class)->findOneBy(['id' => $args['entity']]);
+                            $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['configuratorJob']]);
+
+                            $itemsIds = $args['itemId'];
+                            $configuratorItems = [];
+
+                            if (!empty($itemsIds)) {
+                                foreach ($itemsIds as $itemsId) {
+                                    $configuratorItem = new ConfiguratorItem();
+                                    $configuratorItem->setItemId($itemsId);
+                                    $configuratorItem->setEntity($entity);
+                                    $configuratorItem->setConfiguratorJob($configuratorJob);
+                                    $this->entityManager->persist($configuratorItem);
+                                    array_push($configuratorItems, $configuratorItem);
+                                }
+                                $this->entityManager->flush();
+
+                                return $configuratorItems;
+                            }
+
+                            return new \Exception('Nothing was added.');
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorAlgorithm::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -473,6 +560,43 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(ConfiguratorItem::class), // Use automated sorting options
                         ],
+                        'resolve' => function($root, $args) {
+                            $pool = $this->entityManager->getRepository(Marketplace::class)->findOneBy(['id' => $args['pool']]);
+
+                            $configuratorJob = $this->entityManager->getRepository(ConfiguratorJob::class)->findOneBy(['id' => $args['id']]);
+                            if ($configuratorJob) {
+                                foreach ($args as $key => $value) {
+                                    if (isset($value) && $key != 'id') {
+                                        if ($key == 'pool') {
+                                            $configuratorJob->setPool($pool);
+                                            continue;
+                                        }
+
+                                        if ($key == 'timeToRun') {
+                                            $configuratorJob->setTimeToRun(\DateTime::createFromFormat("H:i", $args['timeToRun']));
+                                            continue;
+                                        }
+
+                                        if ($key == 'options') {
+                                            $value = json_decode($value, true);
+                                        }
+
+                                        $configuratorJob->{'set' . ucfirst($key)}($value);
+                                    }
+                                }
+
+                                if ($args['whenTime'] == 'everyday') {
+                                    $configuratorJob->setDayOfWhen(null);
+                                }
+
+                                $this->entityManager->merge($configuratorJob);
+                                $this->entityManager->flush();
+
+                                return $configuratorJob;
+                            } else {
+                                return new \Exception('Configurator job not found');
+                            }
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(ConfiguratorItem::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -493,6 +617,47 @@ class IndexAction extends AbstractAction
                             'name' => 'sorting',
                             'type' => $this->types->getSorting(Notification::class),
                         ],
+                        'resolve' => function ($root, $args) {
+                            // fixed bug with loosing last order causing \t symbol in the end
+                            foreach ($args['orders'] as $key => $order) {
+                                $args['orders'][$key] = trim($order);
+                            }
+
+                            $orders = $this->entityManager->getRepository(MarketOrder::class)->findBy(['code' => $args['orders']]);
+                            //$ordersSummary =
+
+                            $marketplace = $this->pool()->current();
+                            $dates = [];
+                            $orderSummaryRows = [];
+
+                            foreach ($orders as $order) {
+                                $order->setIsTest(true);
+                                //$this->entityManager->merge($order);
+                                $orderPurchaseAt = (clone $order->getPurchaseAt())->setTime(0,0);
+                                if(!isset($orderSummaryRows[$orderPurchaseAt->format('Y-m-d')])){
+                                    //$dates[$orderPurchaseAt->format('Y-m-d')] = $orderPurchaseAt->setTime(0,0);
+                                    $fromRepository = $this->entityManager->getRepository(OrderSummary::class)
+                                        ->findOneBy([
+                                            'marketplace' => $marketplace,
+                                            'date' => $orderPurchaseAt,
+                                        ]);
+                                    if ($fromRepository) {
+                                        $orderSummaryRows[$orderPurchaseAt->format('Y-m-d')] = $fromRepository;
+                                    }
+                                }
+                            }
+                            $this->entityManager->flush();
+
+
+                            $orderSummaryService = $this->container->get(OrderSummaryService::class);
+                            $summaryParser = new OrderSummaryParser($orderSummaryService);
+
+                            $orderSummaryRows = $summaryParser->processCertainDates($orderSummaryRows, $marketplace);
+
+                            $this->entityManager->flush(); //updated orderSummary table
+
+                            return $orders;
+                        },
                     ],
                     'resolve' => function ($root, $args) {
                         $queryBuilder = $this->types->createFilteredQueryBuilder(Notification::class, $args['filter'] ?? [], $args['sorting'] ?? []);
@@ -1280,35 +1445,41 @@ class IndexAction extends AbstractAction
                 'query' => $queryType,
                 'mutation' => $mutationType,
             ]);
+
             $schema->assertValid();
+
             // See docs on server options:
             // http://webonyx.github.io/graphql-php/executing-queries/#server-configuration-options
             #$server = new StandardServer([
             #    'schema' => $schema
             #]);
+
             $context = new \stdClass();
             $context->request = $request;
             $context->user = $this->user()->current();
             $context->pool = $this->pool()->current();
             $context->entityManager = $this->entityManager;
+
             $config = ServerConfig::create()
                 ->setSchema($schema)
                 ->setContext($context)
                 //->setErrorFormatter($myFormatter)
                 //->setDebug($debug)
             ;
+
             $server = new StandardServer($config);
+
             #ob_start();
             $server->handleRequest();
             #$result = ob_get_contents();
             #ob_end_clean();
+
             #return new JsonResponse();
         } catch (\Exception $e) {
-            //var_dump($e->getMessage());
+            var_dump($e->getMessage());
             StandardServer::send500Error($e);
         }
 
         return new EmptyResponse(200);
     }
 }
-
