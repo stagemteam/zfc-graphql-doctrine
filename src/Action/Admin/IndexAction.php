@@ -48,8 +48,8 @@ use Stagem\Order\Model\OrderSummary;
 use Stagem\Order\Parser\OrderSummaryParser;
 use Stagem\Order\Service\OrderSummaryService;
 use Stagem\Parser\Service\ParserService;
-use Stagem\Product\Block\Admin\Rank\BsrMonitorBlock;
-use Stagem\Product\GraphQL\Type\BSRMonitorType;
+use Stagem\Product\Block\Admin\Rank\MonitorBlock;
+use Stagem\Product\GraphQL\Type\RankMonitorType;
 use Stagem\Product\GraphQL\Type\RankTrackingType;
 use Stagem\Product\Model\Product;
 use Stagem\Product\Model\UserMonitorSettings;
@@ -167,7 +167,7 @@ class IndexAction extends AbstractAction
             $pathToQueries = $this->config['graphql']['queries']['paths'] ?? [];
             $classes = [];
             foreach ($pathToQueries as $dir) {
-                $classes += array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
+                $classes = array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
             }
             $queryFields = [];
             foreach ($classes as $queryClass) {
@@ -722,7 +722,7 @@ class IndexAction extends AbstractAction
             $pathToMutations = $this->config['graphql']['mutations']['paths'] ?? [];
             $classes = [];
             foreach ($pathToMutations as $dir) {
-                $classes += array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
+                $classes = array_merge($classes, (new \Stagem\ClassFinder\ClassFinder())->getClassesInDir($dir));
             }
             $mutationFields = [];
             foreach ($classes as $mutationClass) {

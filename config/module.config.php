@@ -40,7 +40,8 @@ return [
             'date' => Type\DateType::class,
             'time' => Type\TimeType::class,
             'datetime' => Type\DateTimeType::class,
-            DateTime::class => Type\DateTimeType::class
+            DateTime::class => Type\DateTimeType::class,
+            'SimpleObject' => Type\SimpleObjectType::class,
         ],
         //'invokables' => [],
         'factories' => [
@@ -49,6 +50,7 @@ return [
             Type\EmailType::class => InvokableFactory::class,
             Type\DateType::class => InvokableFactory::class,
             Type\DateTimeType::class => InvokableFactory::class,
+            Type\SimpleObjectType::class => InvokableFactory::class,
         ],
     ],
 
