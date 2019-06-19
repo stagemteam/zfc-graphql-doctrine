@@ -48,6 +48,7 @@ return [
             Type\JsonType::class => InvokableFactory::class,
             Type\IterableType::class => InvokableFactory::class,
             Type\EmailType::class => InvokableFactory::class,
+            Type\TimeType::class => InvokableFactory::class,
             Type\DateType::class => InvokableFactory::class,
             Type\DateTimeType::class => InvokableFactory::class,
             Type\SimpleObjectType::class => InvokableFactory::class,
