@@ -657,25 +657,6 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
-
-                    'bsrMonitors' => [
-                        'type' => Type::listOf($this->types->get(BSRMonitorType::class)),
-                        'description' => 'Returns BSR monitor',
-                        'args' => [
-                            'startedAt' => $this->types->get(DateTimeType::class),
-                            'endedAt' => $this->types->get(DateTimeType::class)
-                        ],
-                        'resolve' => function ($root, $args) {
-                            /** @var BsrMonitorBlock $bsrMonitorBlock */
-                            $bsrMonitorBlock = $this->serviceManager->get(BsrMonitorBlock::class);
-                            $args['startedAt'] = $args['startedAt'] ?? (new \DateTime())->setTime(23, 00, 00)->modify('-24 hours');
-                            $args['endedAt'] = $args['endedAt'] ?? (new \DateTime());
-
-                            $items = $bsrMonitorBlock->getBSRMonitor($args['startedAt'], $args['endedAt']);
-
-                            return $items;
-                        }
-                    ]
                 ],
                 'resolveField' => function ($val, $args, $context, ResolveInfo $info) {
                     return $this->{$info->fieldName}($val, $args, $context, $info);
