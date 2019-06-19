@@ -1337,29 +1337,6 @@ class IndexAction extends AbstractAction
                             return $result;
                         },
                     ],
-                    'saveBsrMonitorSettings' => [
-                        'type' => $this->types->getOutput(UserBsrSettings::class),
-                        'args' => [
-                            'settings' => $this->types->get(JsonType::class),
-                        ],
-                        'resolve' => function ($root, $args) {
-                            $user = $this->user()->current();
-                            //$user = $this->entityManager->getRepository(User::class)->findOneBy(['id' => 1]);
-
-                            $userBsrSetting = ($userBsrSetting = $this->entityManager->getRepository(UserBsrSettings::class)->findOneBy(['user' => $user]))
-                                ? $userBsrSetting
-                                : new UserBsrSettings();
-
-                            $userBsrSetting->setUser($user);
-                            $userBsrSetting->setSettings($args['settings']);
-
-                            $this->entityManager->persist($userBsrSetting);
-
-                            $this->entityManager->flush();
-
-                            return $userBsrSetting;
-                        },
-                    ],
                 ],
             ]);
             // See docs on schema options:
