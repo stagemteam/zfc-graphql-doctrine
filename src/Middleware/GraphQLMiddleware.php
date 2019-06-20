@@ -76,6 +76,14 @@ class GraphQLMiddleware implements MiddlewareInterface
         if (stripos($contentType, 'application/json') !== false) {
             $rawBody = file_get_contents('php://input');
             $bodyParams = json_decode($rawBody ?: '', true);
+
+            // Notice: This regexp match only one query per request.
+            $queryRegexp = "/^([\w\d_.-]+)\h+([\w\d_.-]+)\(.*\)\h*\{/m";
+            if (!isset($bodyParams['operationName']) && preg_match($queryRegexp, $bodyParams['query'], $matches)) {
+                list($full, $type, $operationName) = $matches;
+                $bodyParams['operationName'] = $operationName;
+            }
+
             if (isset($bodyParams['operationName'])) {
                 if ($bodyParams['operationName'] === 'LoginMutation') {
                     if ($user = $this->login($request = $request->withParsedBody($bodyParams['variables']))) {
@@ -84,11 +92,9 @@ class GraphQLMiddleware implements MiddlewareInterface
                 } elseif ($bodyParams['operationName'] === 'LogoutMutation') {
                     $this->logout();
                     //$this->userService->setCurrent(null);
+                } elseif (!$this->auth->hasIdentity()) {
+                    StandardServer::send500Error(new Exception('Unauthorized request'), false, true);
                 }
-                // @todo Uncomment when new React will be used
-                #elseif (!$this->auth->hasIdentity()) {
-                    #StandardServer::send500Error(new Exception('Unauthorized request'), false, true);
-                #}
             }
         }
 
