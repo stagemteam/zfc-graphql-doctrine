@@ -18,7 +18,8 @@
   ],
   "require": {
     "php": ">=7.0",
-    "symfony/finder": "^4.3"
+    "symfony/finder": "^4.3",
+    "stagem/class-finder": "^1.0"
   },
   "autoload": {
     "psr-4": {

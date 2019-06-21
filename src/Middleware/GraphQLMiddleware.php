@@ -77,7 +77,7 @@ class GraphQLMiddleware implements MiddlewareInterface
             $rawBody = file_get_contents('php://input');
             $bodyParams = json_decode($rawBody ?: '', true);
 
-            // Notice: This regexp match only one query per request.
+            // Notice: This regexp match only one query per request
             $queryRegexp = "/^([\w\d_.-]+)\h+([\w\d_.-]+)\(.*\)\h*\{/m";
             if (!isset($bodyParams['operationName']) && preg_match($queryRegexp, $bodyParams['query'], $matches)) {
                 list($full, $type, $operationName) = $matches;
