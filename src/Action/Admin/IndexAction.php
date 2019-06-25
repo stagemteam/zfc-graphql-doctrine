@@ -1216,11 +1216,7 @@ class IndexAction extends AbstractAction
                                         $this->entityManager->persist($newProduct);
                                         $products[] = $newProduct;
                                     }
-                                    /** @var ProductMatching $listMatchingProduct */
-                                    $listMatchingProduct = $this->entityManager->getRepository(ProductMatching::class)
-                                        ->findOneBy(['id' => $parsedItem['id']]);
-                                    $listMatchingProduct->setAction("2_skip_asin_competitor");
-                                    $this->entityManager->merge($listMatchingProduct);
+                                    $productMatching->setAction("2_skip_asin_competitor");
                                 }
                             }
                             $this->entityManager->flush();
